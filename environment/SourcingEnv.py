@@ -46,12 +46,12 @@ class SourcingEnv():
         mu_on_comp = np.sum(np.multiply(1 - onoff_status, mu_on_times))
 
         event_rate = lambda_arrival + lead_time_comp + mu_off_comp + mu_on_comp
-        
+
         return 1 / event_rate
     
     # state is defined as inventories of each agent + 
     def reset(self):
-        return [0] + [0] * self.n_suppliers + [1] * self.n_suppliers
+        return np.array([0] + [0] * self.n_suppliers + [1] * self.n_suppliers)
     
     # .step(action)
     def step(self):

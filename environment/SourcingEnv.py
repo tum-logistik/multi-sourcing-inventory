@@ -1,4 +1,5 @@
 import numpy as np
+from DualSourcingEvent import *
 
 class SourcingEnv():
 
@@ -24,7 +25,13 @@ class SourcingEnv():
         self.mu_on_times = invert_np(self.on_times)
         self.mu_off_times = invert_np(self.off_times)  
 
-    def compute_event_rate(self, order_quantity_vec, state_vec = None, lambda_arrival = None, mu_lead_time = None, mu_on_times = None, mu_off_times = None):
+    # order_quantity_vec is action
+    def compute_event_rate(self, order_quantity_vec, 
+        state_vec = None, 
+        lambda_arrival = None, 
+        mu_lead_time = None, 
+        mu_on_times = None, 
+        mu_off_times = None):
         
         if lambda_arrival == None:
             lambda_arrival = self.lambda_arrival
@@ -37,8 +44,8 @@ class SourcingEnv():
         if state_vec == None:
             state_vec = self.current_state
         
-        outstd_orders = self.state_vec[1:1+self.n_suppliers]
-        onoff_status = self.state_vec[1+self.n_suppliers:]
+        outstd_orders = state_vec[1:1+self.n_suppliers]
+        onoff_status = state_vec[1+self.n_suppliers:]
 
         lead_time_comps = np.multiply(order_quantity_vec + outstd_orders, mu_lead_time)
         lead_time_comp = np.sum(lead_time_comps)
@@ -49,6 +56,33 @@ class SourcingEnv():
 
         return 1 / event_rate
     
+    # index for each event
+    # k is supplier index
+    def compute_trans_prob(self, order_quantity_vec, event_type, k = None, state_vec = None):
+
+        if state_vec == None:
+            state_vec = self.current_state
+        
+        if event_type == DualSourcingEvent.DEMAND_ARRIVAL:
+            return self.lambda_arrival * self.compute_event_rate(order_quantity_vec)
+        else:
+            assert k is not None
+            if event_type == DualSourcingEvent.SUPPLY_ARRIVAL:
+                outstd_orders = self.state_vec[1+k]
+                return (outstd_orders + order_quantity_vec[k]) * self.mu_lead_time[k] * self.compute_event_rate(order_quantity_vec)
+
+            if event_type == DualSourcingEvent.SUPPLIER_ON:
+                onoff_status = state_vec[1+self.n_suppliers+k]
+                return (1 - onoff_status) * self.mu_off_times[k] * self.compute_event_rate(order_quantity_vec)
+            
+            if event_type == DualSourcingEvent.SUPPLIER_OFF:
+                onoff_status = state_vec[1+self.n_suppliers+k]
+                return onoff_status * self.mu_on_times[k] * self.compute_event_rate(order_quantity_vec)
+        
+        return 0
+
+
+
     # state is defined as inventories of each agent + 
     def reset(self):
         return np.array([0] + [0] * self.n_suppliers + [1] * self.n_suppliers)

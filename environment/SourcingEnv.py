@@ -5,7 +5,9 @@ import copy
 class SourcingEnv():
 
     # Switch to np.array for speed up
-    def __init__(self, order_quantity = 30, 
+    def __init__(self, 
+        order_quantity = 30,
+        lambda_arrival = 0.1,
         procurement_cost_vec = np.array([2, 1.7]), 
         supplier_lead_times_vec = np.array([0.5, 0.75]), 
         on_times = np.array([3, 1]), 
@@ -14,7 +16,7 @@ class SourcingEnv():
         invert_np = lambda x: 1/x
 
         self.action_size = order_quantity
-        self.lambda_arrival = 0.1
+        self.lambda_arrival = lambda_arrival
         self.on_times = on_times
         self.off_times = off_times
         self.procurement_cost_vec = procurement_cost_vec
@@ -81,6 +83,8 @@ class SourcingEnv():
             
             if event_type == Event.SUPPLIER_ON:
                 onoff_status = state_vec[1+self.n_suppliers+k]
+                if 1 - onoff_status < 0:
+                    print("here")
                 return (1 - onoff_status) * self.mu_off_times[k] * event_rate
             
             if event_type == Event.SUPPLIER_OFF:
@@ -110,23 +114,28 @@ class SourcingEnv():
         event_probs = self.get_event_probs(order_quantity_vec)
         event_indexes = np.array(range(len(event_probs)))
 
-        for i in event_indexes:
-            b = np.random.choice([0, 1], 1, p=[1-event_probs[i], event_probs[i]] )[0]
-            if b == 1:
-                break
+        # for i in event_indexes:
+        #     b = np.random.choice([0, 1], 1, p=[1-event_probs[i], event_probs[i]] )[0]
+        #     if b == 1:
+        #         break
+        
+        i = np.random.choice(event_indexes, 1, p = event_probs)[0]
         
         next_state = copy.deepcopy(self.current_state) 
         if i == 0:
             event = Event.DEMAND_ARRIVAL
             next_state[0] = next_state[0] - 1
+            for k in range(self.n_suppliers):
+                if self.current_state[1+self.n_suppliers+k] == 1:
+                    next_state[1+k] += order_quantity_vec[i-1]
         elif 0 < i < 1 + self.n_suppliers:
             event = Event.SUPPLY_ARRIVAL
             next_state[0] = next_state[0] + 1
             next_state[i] = next_state[i] + order_quantity_vec[i-1] - 1 # match index with k
-        elif self.n_suppliers < i < 1 + 2*self.n_suppliers:
+        elif 1 + self.n_suppliers - 1 < i < 1 + 2*self.n_suppliers:
             event = Event.SUPPLIER_ON
             next_state[i] = next_state[i] + 1 # coincidentally same index
-        elif self.n_suppliers < i < 1 + 2*self.n_suppliers:
+        elif 1 + 2*self.n_suppliers - 1 < i:
             event = Event.SUPPLIER_OFF
             index = i - self.n_suppliers
             next_state[index] = next_state[index] - 1
@@ -135,6 +144,6 @@ class SourcingEnv():
 
         self.current_state = next_state
 
-        return next_state, event, event_probs 
+        return next_state, event, i, event_probs 
 
     

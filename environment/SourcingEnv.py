@@ -1,5 +1,6 @@
 import numpy as np
-from DualSourcingEvent import *
+from environment.Event import *
+import copy
 
 class SourcingEnv():
 
@@ -23,7 +24,12 @@ class SourcingEnv():
 
         self.mu_lead_time = invert_np(self.supplier_lead_times_vec)
         self.mu_on_times = invert_np(self.on_times)
-        self.mu_off_times = invert_np(self.off_times)  
+        self.mu_off_times = invert_np(self.off_times)
+        self.event_space = [Event.DEMAND_ARRIVAL, Event.SUPPLY_ARRIVAL, Event.SUPPLIER_ON, Event.SUPPLIER_OFF, Event.NO_EVENT]
+
+    # state is defined as inventories of each agent + 
+    def reset(self):
+        return np.array([0] + [0] * self.n_suppliers + [1] * self.n_suppliers)
 
     # order_quantity_vec is action
     def compute_event_rate(self, order_quantity_vec, 
@@ -50,7 +56,7 @@ class SourcingEnv():
         lead_time_comps = np.multiply(order_quantity_vec + outstd_orders, mu_lead_time)
         lead_time_comp = np.sum(lead_time_comps)
         mu_off_comp = np.sum(np.multiply(1 - onoff_status, mu_off_times))
-        mu_on_comp = np.sum(np.multiply(1 - onoff_status, mu_on_times))
+        mu_on_comp = np.sum(np.multiply(onoff_status, mu_on_times))
 
         event_rate = lambda_arrival + lead_time_comp + mu_off_comp + mu_on_comp
 
@@ -58,36 +64,77 @@ class SourcingEnv():
     
     # index for each event
     # k is supplier index
-    def compute_trans_prob(self, order_quantity_vec, event_type, k = None, state_vec = None):
-
+    def compute_trans_prob(self, order_quantity_vec, event_type, k = None, state_vec = None, event_rate = None):
+        
         if state_vec == None:
             state_vec = self.current_state
+        if event_rate == None:
+            event_rate = self.compute_event_rate(order_quantity_vec)
         
-        if event_type == DualSourcingEvent.DEMAND_ARRIVAL:
-            return self.lambda_arrival * self.compute_event_rate(order_quantity_vec)
+        if event_type == Event.DEMAND_ARRIVAL:
+            return self.lambda_arrival * event_rate
         else:
             assert k is not None
-            if event_type == DualSourcingEvent.SUPPLY_ARRIVAL:
-                outstd_orders = self.state_vec[1+k]
-                return (outstd_orders + order_quantity_vec[k]) * self.mu_lead_time[k] * self.compute_event_rate(order_quantity_vec)
-
-            if event_type == DualSourcingEvent.SUPPLIER_ON:
-                onoff_status = state_vec[1+self.n_suppliers+k]
-                return (1 - onoff_status) * self.mu_off_times[k] * self.compute_event_rate(order_quantity_vec)
+            if event_type == Event.SUPPLY_ARRIVAL:
+                outstd_orders = state_vec[1+k]
+                return (outstd_orders + order_quantity_vec[k]) * self.mu_lead_time[k] * event_rate
             
-            if event_type == DualSourcingEvent.SUPPLIER_OFF:
+            if event_type == Event.SUPPLIER_ON:
                 onoff_status = state_vec[1+self.n_suppliers+k]
-                return onoff_status * self.mu_on_times[k] * self.compute_event_rate(order_quantity_vec)
+                return (1 - onoff_status) * self.mu_off_times[k] * event_rate
+            
+            if event_type == Event.SUPPLIER_OFF:
+                onoff_status = state_vec[1+self.n_suppliers+k]
+                return onoff_status * self.mu_on_times[k] * event_rate
         
         return 0
+    
+    
+    # action: order_quantity_vec
+    def get_event_probs(self, order_quantity_vec):
+        # use np.random.choice
+        # vi = np.random.choice(agent_ids, 1, p=win_probs, replace=False)
+        demand_arrival_prob = self.compute_trans_prob(order_quantity_vec, Event.DEMAND_ARRIVAL)
+        
+        supply_arrival_probs = [self.compute_trans_prob(order_quantity_vec, Event.SUPPLY_ARRIVAL, k = i) for i in range(self.n_suppliers)]
+        supply_on_probs = [self.compute_trans_prob(order_quantity_vec, Event.SUPPLIER_ON, k = i) for i in range(self.n_suppliers)]
+        supply_off_probs = [self.compute_trans_prob(order_quantity_vec, Event.SUPPLIER_OFF, k = i) for i in range(self.n_suppliers)]
 
+        event_probs = np.array([demand_arrival_prob] + supply_arrival_probs + supply_on_probs + supply_off_probs)
 
-
-    # state is defined as inventories of each agent + 
-    def reset(self):
-        return np.array([0] + [0] * self.n_suppliers + [1] * self.n_suppliers)
+        
+        return event_probs
     
     # .step(action)
-    def step(self):
-        return 1
+    def step(self, order_quantity_vec):
+        event_probs = self.get_event_probs(order_quantity_vec)
+        event_indexes = np.array(range(len(event_probs)))
+
+        for i in event_indexes:
+            b = np.random.choice([0, 1], 1, p=[1-event_probs[i], event_probs[i]] )[0]
+            if b == 1:
+                break
+        
+        next_state = copy.deepcopy(self.current_state) 
+        if i == 0:
+            event = Event.DEMAND_ARRIVAL
+            next_state[0] = next_state[0] - 1
+        elif 0 < i < 1 + self.n_suppliers:
+            event = Event.SUPPLY_ARRIVAL
+            next_state[0] = next_state[0] + 1
+            next_state[i] = next_state[i] + order_quantity_vec[i-1] - 1 # match index with k
+        elif self.n_suppliers < i < 1 + 2*self.n_suppliers:
+            event = Event.SUPPLIER_ON
+            next_state[i] = next_state[i] + 1 # coincidentally same index
+        elif self.n_suppliers < i < 1 + 2*self.n_suppliers:
+            event = Event.SUPPLIER_OFF
+            index = i - self.n_suppliers
+            next_state[index] = next_state[index] - 1
+        else:
+            event = Event.NO_EVENT # No state transition
+
+        self.current_state = next_state
+
+        return next_state, event, event_probs 
+
     

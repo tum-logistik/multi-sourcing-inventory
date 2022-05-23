@@ -9,8 +9,6 @@ if __name__ == '__main__':
         on_times = np.array([3, 1])/8, 
         off_times = np.array([0.3, 1])/7)
     
-    
-
     history = []
 
     for i in range(1999):

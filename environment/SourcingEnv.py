@@ -33,7 +33,7 @@ class SourcingEnv():
     def reset(self):
         return np.array([0] + [0] * self.n_suppliers + [1] * self.n_suppliers)
 
-    # order_quantity_vec is action
+    # order_quantity_vec is action (tau)
     def compute_event_rate(self, order_quantity_vec, 
         state_vec = None, 
         lambda_arrival = None, 
@@ -60,12 +60,12 @@ class SourcingEnv():
         mu_off_comp = np.sum(np.multiply(1 - onoff_status, mu_off_times))
         mu_on_comp = np.sum(np.multiply(onoff_status, mu_on_times))
 
-        event_rate = lambda_arrival + lead_time_comp + mu_off_comp + mu_on_comp
+        expected_time = lambda_arrival + lead_time_comp + mu_off_comp + mu_on_comp
 
-        return 1 / event_rate
+        return 1 / expected_time
     
     # index for each event
-    # k is supplier index
+    # k is supplier index (pij)
     def compute_trans_prob(self, order_quantity_vec, event_type, k = None, state_vec = None, event_rate = None):
         
         if state_vec == None:
@@ -105,7 +105,6 @@ class SourcingEnv():
         supply_off_probs = [self.compute_trans_prob(order_quantity_vec, Event.SUPPLIER_OFF, k = i) for i in range(self.n_suppliers)]
 
         event_probs = np.array([demand_arrival_prob] + supply_arrival_probs + supply_on_probs + supply_off_probs)
-
         
         return event_probs
     

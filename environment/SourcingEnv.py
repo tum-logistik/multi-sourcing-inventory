@@ -1,5 +1,5 @@
 import numpy as np
-from environment.Event import *
+from environment.HelperClasses import *
 from common.variables import *
 import copy
 

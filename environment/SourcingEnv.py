@@ -17,6 +17,7 @@ class SourcingEnv():
         invert_np = lambda x: 1/x
 
         self.action_size = order_quantity
+
         self.lambda_arrival = lambda_arrival
         self.on_times = on_times
         self.off_times = off_times
@@ -29,6 +30,11 @@ class SourcingEnv():
         self.mu_on_times = invert_np(self.on_times)
         self.mu_off_times = invert_np(self.off_times)
         self.event_space = [Event.DEMAND_ARRIVAL, Event.SUPPLY_ARRIVAL, Event.SUPPLIER_ON, Event.SUPPLIER_OFF, Event.NO_EVENT]
+
+        assert len(self.on_times) == self.n_suppliers, "Assertion Failed: Mismatch length - on_times"
+        assert len(self.off_times) == self.n_suppliers, "Assertion Failed: Mismatch length - off_times"
+        assert len(self.procurement_cost_vec) == self.n_suppliers, "Assertion Failed: Mismatch length - procurement_cost_vec"
+        assert len(self.supplier_lead_times_vec) == self.n_suppliers, "Assertion Failed: Mismatch length - supplier_lead_times_vec"
 
     # state is defined as inventories of each agent + 
     def reset(self):
@@ -128,25 +134,34 @@ class SourcingEnv():
             for k in range(self.n_suppliers):
                 if self.current_state.flag_on_off[k] == 1:
                     next_state.n_backorders[k] += order_quantity_vec[k]
+            supplier_index = None
         elif 0 < i < 1 + self.n_suppliers:
             event = Event.SUPPLY_ARRIVAL
-            next_state.s = next_state.s + next_state.n_backorders[i-1] + order_quantity_vec[i-1]
-            next_state.n_backorders[i-1] = 0
+            supplier_index = i-1
+            next_state.s = next_state.s + next_state.n_backorders[supplier_index] + order_quantity_vec[supplier_index]
+            next_state.n_backorders[supplier_index] = 0
         elif 1 + self.n_suppliers - 1 < i < 1 + 2*self.n_suppliers:
             event = Event.SUPPLIER_ON
-            index = i - 1 - 2*self.n_suppliers
-            next_state.flag_on_off[index] = next_state.flag_on_off[index] + 1 
-            assert -1 < next_state.flag_on_off[index] < 2, "Assertion Failed: Supplier ON Index over 1 or under 0"
+            supplier_index = i - 1 - self.n_suppliers
+            next_state.flag_on_off[supplier_index] = next_state.flag_on_off[supplier_index] + 1 
+            assert -1 < next_state.flag_on_off[supplier_index] < 2, "Assertion Failed: Supplier ON Index over 1 or under 0"
         elif 1 + 2*self.n_suppliers - 1 < i:
             event = Event.SUPPLIER_OFF
-            index = i - 1 - 2*self.n_suppliers
-            next_state.flag_on_off[index] = next_state.flag_on_off[index] - 1
-            assert -1 < next_state.flag_on_off[index] < 2, "Assertion Failed: Supplier OFF Index over 1 or under 0"
+            supplier_index = i - 1 - 2*self.n_suppliers
+            next_state.flag_on_off[supplier_index] = next_state.flag_on_off[supplier_index] - 1
+            assert -1 < next_state.flag_on_off[supplier_index] < 2, "Assertion Failed: Supplier OFF Index over 1 or under 0"
         else:
             event = Event.NO_EVENT # No state transition
+            supplier_index = None
         
-        self.current_state = next_state
+        if supplier_index != None:
+            assert supplier_index > -1, "Assertion Failed: supplier_index < 0"
+        else:
+            assert event in [Event.DEMAND_ARRIVAL, Event.NO_EVENT], "AssertAssertion Failed: Unknown event."
 
-        return next_state, event, i, event_probs 
+        self.current_state = next_state
+        
+
+        return next_state, event, i, event_probs, supplier_index
 
     

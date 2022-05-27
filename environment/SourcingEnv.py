@@ -126,7 +126,7 @@ class SourcingEnv():
             event = Event.DEMAND_ARRIVAL
             next_state.s = next_state.s - 1
             for k in range(self.n_suppliers):
-                if self.current_state.n_backorders[k] == 1:
+                if self.current_state.flag_on_off[k] == 1:
                     next_state.n_backorders[k] += order_quantity_vec[k]
         elif 0 < i < 1 + self.n_suppliers:
             event = Event.SUPPLY_ARRIVAL

@@ -5,7 +5,7 @@ if __name__ == '__main__':
     print("run")
 
     sourcingEnv = SourcingEnv(
-        lambda_arrival = 5, 
+        lambda_arrival = 5, # or 10
         on_times = np.array([3, 1]), 
         off_times = np.array([0.3, 1]))
     

@@ -19,7 +19,7 @@ class MState():
         
         self.s = stock_level # stock level
         self.n_backorders = np.zeros(n_suppliers) # n outstanding backorders
-        self.flag_on_off = np.zeros(n_suppliers) # on off flag
+        self.flag_on_off = np.ones(n_suppliers) # on off flag
 
 
 

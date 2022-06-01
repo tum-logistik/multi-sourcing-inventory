@@ -14,7 +14,7 @@ if __name__ == '__main__':
     history = []
 
     for i in range(1999):
-        random_action = [np.random.randint(0, 4) for x in range(sourcingEnv.n_suppliers)] 
+        random_action = np.array([np.random.randint(0, 4) for x in range(sourcingEnv.n_suppliers)])
 
         next_state, event, event_index, probs, supplier_index = sourcingEnv.step(random_action)
         sum_check =  np.sum(probs)

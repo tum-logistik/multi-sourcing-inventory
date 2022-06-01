@@ -24,7 +24,7 @@ class SourcingEnv():
         self.procurement_cost_vec = procurement_cost_vec
         self.supplier_lead_times_vec = supplier_lead_times_vec
         self.n_suppliers = len(procurement_cost_vec)
-        self.current_state = self.reset()
+        _ = self.reset()
 
         self.mu_lt_rate = invert_np(self.supplier_lead_times_vec)
         self.mu_on_times = invert_np(self.on_times)
@@ -39,6 +39,7 @@ class SourcingEnv():
     # state is defined as inventories of each agent + 
     def reset(self):
         initial_state = MState(n_suppliers = self.n_suppliers)
+        self.current_state = initial_state
         return initial_state
 
     # order_quantity_vec is action (tau)
@@ -95,9 +96,8 @@ class SourcingEnv():
                 return (outstd_orders[k] + order_quantity_vec[k]) * self.mu_lt_rate[k] * tau_event
             
             onoff_status = state_obj.flag_on_off[k]
+            assert onoff_status > -1, "Assertion Failed: On / off flag outside bound (0, 1)"
             if event_type == Event.SUPPLIER_ON:
-                if 1 - onoff_status < 0:
-                    print("here")
                 return (1 - onoff_status) * self.mu_off_times[k] * tau_event
             
             if event_type == Event.SUPPLIER_OFF:
@@ -121,39 +121,60 @@ class SourcingEnv():
         return event_probs
     
     # .step(action)
-    def step(self, order_quantity_vec):
-        event_probs = self.get_event_probs(order_quantity_vec)
-        event_indexes = np.array(range(len(event_probs)))
-        
-        i = np.random.choice(event_indexes, 1, p = event_probs)[0]
-        next_state = copy.deepcopy(self.current_state) 
+    def step(self, order_quantity_vec, force_event_tuple = None):
 
+        assert order_quantity_vec.all() >= 0, "Assertion Failed: Negative order quantity!"
+        
+        if not force_event_tuple: 
+            event_probs = self.get_event_probs(order_quantity_vec)
+            event_indexes = np.array(range(len(event_probs)))            
+            i = np.random.choice(event_indexes, 1, p = event_probs)[0]
+        else:
+            event = force_event_tuple[0]
+            event_probs = np.zeros(1 + 3*self.n_suppliers)
+            
+            if event == Event.DEMAND_ARRIVAL:
+                i = 0
+            elif event == Event.SUPPLY_ARRIVAL: # tuple includes (state, supplier)
+                i = 1 + force_event_tuple[1]
+            elif event == Event.SUPPLIER_ON: 
+                i = 1 + self.n_suppliers + force_event_tuple[1]
+            elif event == Event.SUPPLIER_OFF:
+                i = 1 + 2*self.n_suppliers + force_event_tuple[1]
+            
+            event_probs[i] = 1
+
+        next_state = copy.deepcopy(self.current_state)
+        
+        
         if i == 0:
             event = Event.DEMAND_ARRIVAL
             next_state.s = next_state.s - 1
-            for k in range(self.n_suppliers):
-                if self.current_state.flag_on_off[k] == 1:
-                    next_state.n_backorders[k] += order_quantity_vec[k]
             supplier_index = None
         elif 0 < i < 1 + self.n_suppliers:
             event = Event.SUPPLY_ARRIVAL
             supplier_index = i-1
-            next_state.s = next_state.s + next_state.n_backorders[supplier_index] + order_quantity_vec[supplier_index]
+            next_state.s = next_state.s + next_state.n_backorders[supplier_index]
             next_state.n_backorders[supplier_index] = 0
         elif 1 + self.n_suppliers - 1 < i < 1 + 2*self.n_suppliers:
             event = Event.SUPPLIER_ON
             supplier_index = i - 1 - self.n_suppliers
-            next_state.flag_on_off[supplier_index] = next_state.flag_on_off[supplier_index] + 1 
+            next_state.flag_on_off[supplier_index] = np.clip(next_state.flag_on_off[supplier_index] + 1, 0 ,1)
             assert -1 < next_state.flag_on_off[supplier_index] < 2, "Assertion Failed: Supplier ON Index over 1 or under 0"
         elif 1 + 2*self.n_suppliers - 1 < i:
             event = Event.SUPPLIER_OFF
             supplier_index = i - 1 - 2*self.n_suppliers
-            next_state.flag_on_off[supplier_index] = next_state.flag_on_off[supplier_index] - 1
+            next_state.flag_on_off[supplier_index] = np.clip(next_state.flag_on_off[supplier_index] - 1, 0 ,1)
             assert -1 < next_state.flag_on_off[supplier_index] < 2, "Assertion Failed: Supplier OFF Index over 1 or under 0"
         else:
             event = Event.NO_EVENT # No state transition
             supplier_index = None
         
+        # Assume when supplier is unavailable, no addition to backlog.
+        for k in range(self.n_suppliers):
+            if self.current_state.flag_on_off[k] == 1:
+                next_state.n_backorders[k] += order_quantity_vec[k]
+
         if supplier_index != None:
             assert supplier_index > -1, "Assertion Failed: supplier_index < 0"
         else:
@@ -161,7 +182,6 @@ class SourcingEnv():
 
         self.current_state = next_state
         
-
         return next_state, event, i, event_probs, supplier_index
 
     

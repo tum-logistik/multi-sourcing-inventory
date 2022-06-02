@@ -23,6 +23,9 @@ class MState():
         self.n_backorders = n_backorders if isinstance(n_backorders, np.ndarray) else np.zeros(n_suppliers)
         self.flag_on_off = flag_on_off if isinstance(flag_on_off, np.ndarray) else np.ones(n_suppliers)
         # self.flag_on_off = np.ones(n_suppliers) if not flag_on_off.any() else flag_on_off # on off flag
+    
+    def __str__(self):
+        return "Stock: {fname}, n backorders: {nb}, supplier status (on/off): {sup_stat}".format(fname = self.s, nb = self.n_backorders, sup_stat = self.flag_on_off)
 
 
 

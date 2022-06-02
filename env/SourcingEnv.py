@@ -131,7 +131,7 @@ class SourcingEnv():
             i = 1 + 2*self.n_suppliers + supplier_index
         return i
 
-    # .step(action)
+    # .step(action), defaults to backorder model
     def step(self, order_quantity_vec, force_event_tuple = None):
 
         assert order_quantity_vec.all() >= 0, "Assertion Failed: Negative order quantity!"

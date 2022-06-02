@@ -1,5 +1,5 @@
 import numpy as np
-from environment.HelperClasses import *
+from env.HelperClasses import *
 from common.variables import *
 import copy
 
@@ -120,6 +120,17 @@ class SourcingEnv():
 
         return event_probs
     
+    def get_event_index_from_event(self, event, supplier_index):
+        if event == Event.DEMAND_ARRIVAL:
+            i = 0
+        elif event == Event.SUPPLY_ARRIVAL: # tuple includes (state, supplier)
+            i = 1 + supplier_index
+        elif event == Event.SUPPLIER_ON: 
+            i = 1 + self.n_suppliers + supplier_index
+        elif event == Event.SUPPLIER_OFF:
+            i = 1 + 2*self.n_suppliers + supplier_index
+        return i
+
     # .step(action)
     def step(self, order_quantity_vec, force_event_tuple = None):
 
@@ -130,22 +141,11 @@ class SourcingEnv():
             event_indexes = np.array(range(len(event_probs)))            
             i = np.random.choice(event_indexes, 1, p = event_probs)[0]
         else:
-            event = force_event_tuple[0]
             event_probs = np.zeros(1 + 3*self.n_suppliers)
-            
-            if event == Event.DEMAND_ARRIVAL:
-                i = 0
-            elif event == Event.SUPPLY_ARRIVAL: # tuple includes (state, supplier)
-                i = 1 + force_event_tuple[1]
-            elif event == Event.SUPPLIER_ON: 
-                i = 1 + self.n_suppliers + force_event_tuple[1]
-            elif event == Event.SUPPLIER_OFF:
-                i = 1 + 2*self.n_suppliers + force_event_tuple[1]
-            
+            i = self.get_event_index_from_event(force_event_tuple[0], force_event_tuple[1]) # (event, supplier index)
             event_probs[i] = 1
-
-        next_state = copy.deepcopy(self.current_state)
         
+        next_state = copy.deepcopy(self.current_state)
         
         if i == 0:
             event = Event.DEMAND_ARRIVAL

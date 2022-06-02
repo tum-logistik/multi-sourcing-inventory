@@ -1,4 +1,4 @@
-from environment.SourcingEnv import *
+from env.SourcingEnv import *
 import time
 
 # Functional tests, 2, 3, 5, 10, 100 suppliers 99 iterations

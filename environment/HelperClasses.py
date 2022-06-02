@@ -15,11 +15,14 @@ class MState():
 
     def __init__(self,
         stock_level = 0, 
-        n_suppliers = 2):
+        n_suppliers = 2,
+        n_backorders = False,
+        flag_on_off = False):
         
         self.s = stock_level # stock level
-        self.n_backorders = np.zeros(n_suppliers) # n outstanding backorders
-        self.flag_on_off = np.zeros(n_suppliers) # on off flag
+        self.n_backorders = n_backorders if isinstance(n_backorders, np.ndarray) else np.zeros(n_suppliers)
+        self.flag_on_off = flag_on_off if isinstance(flag_on_off, np.ndarray) else np.ones(n_suppliers)
+        # self.flag_on_off = np.ones(n_suppliers) if not flag_on_off.any() else flag_on_off # on off flag
 
 
 

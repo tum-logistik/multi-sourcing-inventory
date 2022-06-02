@@ -1,20 +1,23 @@
 from environment.SourcingEnv import *
+import time
 
-# Functional tests, 2, 3, 5, 10 suppliers 99 iterations
+# Functional tests, 2, 3, 5, 10, 100 suppliers 99 iterations
 def combination_func_tests():
     for n_sup in [2, 3, 5, 10, 100]:
         sourcingEnv = SourcingEnv(
-            lambda_arrival = np.random.uniform(0, 100),
-            procurement_cost_vec = np.ones(n_sup) * np.random.uniform(0, 100),
-            supplier_lead_times_vec = np.ones(n_sup) * np.random.uniform(0, 100),
-            on_times = np.ones(n_sup) * np.random.uniform(0, 100), 
-            off_times = np.ones(n_sup) * np.random.uniform(0, 100)
+                lambda_arrival = np.random.uniform(0, 100),
+                procurement_cost_vec = np.ones(n_sup) * np.random.uniform(0, 100),
+                supplier_lead_times_vec = np.ones(n_sup) * np.random.uniform(0, 100),
+                on_times = np.ones(n_sup) * np.random.uniform(0, 100), 
+                off_times = np.ones(n_sup) * np.random.uniform(0, 100)
             )
         functional_test(sourcingEnv)
     print("##### Passed all functional tests! #####")
+
     return True
 
 def functional_test(sourcingEnv, iters = 99):
+    start_time = time.time()
     for i in range(iters):
         random_action = np.array([np.random.randint(0, 4) for x in range(sourcingEnv.n_suppliers)])
 
@@ -22,9 +25,10 @@ def functional_test(sourcingEnv, iters = 99):
         sum_check =  np.sum(probs)
     
     print("##### Test Run with (" + str(sourcingEnv.n_suppliers) + ") suppliers passed! #####")
-    return True
 
-
+    run_time = time.time() - start_time
+    print("Time -func test- no. suppliers " + str(sourcingEnv.n_suppliers) + ") - runtime: " + str(run_time))
+    return True, run_time
 
 def assert_state_equality(next_state, check_state, ass_msg = "Test Failed: "):
     assert next_state.s == check_state.s and (next_state.flag_on_off == check_state.flag_on_off).all() and (next_state.n_backorders == check_state.n_backorders).all(), ass_msg
@@ -35,7 +39,7 @@ def run_test_scenario_1(sourcingEnv, n_sup = 2):
     # DEMAND_ARRIVAL (2, 1) -> DEMAND_ARRIVAL (3, 1) -> SUPPLY_ARRIVAL_1 -> (3, 2)
     # Backorder: [-1, 2, 1, 1, 1] -> [-2, 5, 2, 1, 1] -> [0, 8, 2, 1, 1]
     # LS:
-
+    
     start_state = sourcingEnv.reset()
     scenario_id = "1"
     

@@ -2,7 +2,6 @@ import numpy as np
 from env.HelperClasses import *
 from common.variables import *
 import copy
-import itertools as it
 
 class SourcingEnv():
 
@@ -13,10 +12,11 @@ class SourcingEnv():
         procurement_cost_vec = np.array([2, 1.7]), 
         supplier_lead_times_vec = np.array([0.5, 0.75]), 
         on_times = np.array([3, 1]), 
-        off_times = np.array([0.3, 1]),
-        max_episodes = PERIODS):
+        off_times = np.array([0.3, 1])):
         
         invert_np = lambda x: 1/x
+
+        self.action_size = order_quantity
 
         self.lambda_arrival = lambda_arrival
         self.on_times = on_times
@@ -30,12 +30,6 @@ class SourcingEnv():
         self.mu_on_times = invert_np(self.on_times)
         self.mu_off_times = invert_np(self.off_times)
         self.event_space = [Event.DEMAND_ARRIVAL, Event.SUPPLY_ARRIVAL, Event.SUPPLIER_ON, Event.SUPPLIER_OFF, Event.NO_EVENT]
-
-        self.action_size = order_quantity
-
-        # Superfluous for the MCTS implementation
-        self.n_steps = 0
-        self.max_episodes = max_episodes
 
         assert len(self.on_times) == self.n_suppliers, "Assertion Failed: Mismatch length - on_times"
         assert len(self.off_times) == self.n_suppliers, "Assertion Failed: Mismatch length - off_times"
@@ -187,13 +181,5 @@ class SourcingEnv():
             assert event in [Event.DEMAND_ARRIVAL, Event.NO_EVENT], "AssertAssertion Failed: Unknown event."
 
         self.current_state = next_state
-
-        # Superfluous for the MCTS implementation
-        self.n_steps += 1
-        self.current_state.is_terminal = self.isTerminal()
-
+        
         return next_state, event, i, event_probs, supplier_index
-
-    def isTerminal(self):
-        # Superfluous for the MCTS implementation
-        return self.n_steps > self.max_episodes

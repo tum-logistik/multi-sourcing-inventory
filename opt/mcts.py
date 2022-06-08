@@ -3,7 +3,7 @@ from __future__ import division
 import time
 import math
 import random
-
+from common.variables import *
 
 def randomPolicy(state):
     while not state.isTerminal():
@@ -34,8 +34,12 @@ class treeNode():
         return "%s: {%s}"%(self.__class__.__name__, ', '.join(s))
 
 class mcts():
-    def __init__(self, timeLimit=None, iterationLimit=None, explorationConstant=1 / math.sqrt(2),
-                 rolloutPolicy=randomPolicy):
+    def __init__(self, timeLimit=None, 
+                iterationLimit=MAX_MCTS_ITERS, 
+                explorationConstant=1 / math.sqrt(2),
+                rolloutPolicy=randomPolicy,
+                max_mcts_iters = MAX_MCTS_ITERS):
+            
         if timeLimit != None:
             if iterationLimit != None:
                 raise ValueError("Cannot have both a time limit and an iteration limit")
@@ -53,19 +57,26 @@ class mcts():
         self.explorationConstant = explorationConstant
         self.rollout = rolloutPolicy
 
+        self.mcts_iters = 0
+        self.max_mcts_iters = max_mcts_iters
+
     def search(self, initialState, needDetails=False):
         self.root = treeNode(initialState, None)
 
-        if self.limitType == 'time':
-            timeLimit = time.time() + self.timeLimit / 1000
-            while time.time() < timeLimit:
-                self.executeRound()
-        else:
-            for i in range(self.searchLimit):
-                self.executeRound()
+        # if self.limitType == 'time':
+        #     timeLimit = time.time() + self.timeLimit / 1000
+        #     while time.time() < timeLimit:
+        #         self.executeRound()
+        # else:
+        #     for i in range(self.searchLimit):
+        #         self.executeRound()
+
+        while self.mcts_iters < self.max_mcts_iters:
+            print("mcts iteration no: " +  str(self.mcts_iters))
+            self.executeRound()
 
         bestChild = self.getBestChild(self.root, 0)
-        action=(action for action, node in self.root.children.items() if node is bestChild).__next__()
+        action = (action for action, node in self.root.children.items() if node is bestChild).__next__()
         if needDetails:
             return {"action": action, "expectedReward": bestChild.totalReward / bestChild.numVisits}
         else:
@@ -78,6 +89,8 @@ class mcts():
         node = self.selectNode(self.root)
         reward = self.rollout(node.state)
         self.backpropogate(node, reward)
+
+        self.mcts_iters += 1
 
     def selectNode(self, node):
         while not node.isTerminal:

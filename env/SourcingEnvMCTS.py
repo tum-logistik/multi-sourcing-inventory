@@ -5,32 +5,20 @@ import itertools as it
 from sim.sim_functions import *
 
 class SourcingEnvMCTSWrapper():
-    def __init__(self, 
-        order_quantity = 30,
-        lambda_arrival = 10,
-        procurement_cost_vec = np.array([2, 1.7]), 
-        supplier_lead_times_vec = np.array([0.5, 0.75]), 
-        on_times = np.array([3, 1]), 
-        off_times = np.array([0.3, 1]),
-        ):
+    def __init__(self, sourcingEnv,
+        max_episodes = PERIODS):
 
-        self.sourcingEnv = sourcingEnv = SourcingEnv(
-            order_quantity = order_quantity,
-            lambda_arrival = lambda_arrival, # or 10
-            procurement_cost_vec = procurement_cost_vec,
-            supplier_lead_times_vec = supplier_lead_times_vec,
-            on_times = on_times, 
-            off_times = off_times
-        )
+        self.sourcingEnv = sourcingEnv 
 
         self.n_steps = 0
-        self.max_episodes = self.sourcingEnv.max_episodes
+        self.max_episodes = max_episodes
+        self.action_size = self.sourcingEnv.action_size
     
     def getCurrentPlayer(self):
         return 1
     
     def getPossibleActions(self):
-        self.single_sup_action_space = np.arange(0, self.sourcingEnv.action_size + 1, 1)
+        self.single_sup_action_space = np.arange(0, self.action_size + 1, 1)
         self.joint_action_space_nested = [self.single_sup_action_space]*self.sourcingEnv.n_suppliers
 
         self.joint_action_space_list = [x for x in it.product(*self.joint_action_space_nested)]
@@ -41,15 +29,17 @@ class SourcingEnvMCTSWrapper():
     def takeAction(self, action_tuple):
         action = np.array(list(action_tuple))
         next_state, event, event_index, probs, supplier_index  = self.sourcingEnv.step(action)
-        self.n_steps += 1
-        return next_state
+        # self.n_steps += 1
+        next_state_mcts = SourcingEnvMCTSWrapper(self.sourcingEnv)
+        next_state_mcts.n_steps = self.n_steps + 1
+        return next_state_mcts # Nasty
     
     def isTerminal(self):
-        # return self.n_steps > self.max_episodes
-        return self.sourcingEnv.isTerminal()
+        return self.n_steps > self.max_episodes
     
     def getReward(self):
-        return -cost_calc(self.sourcingEnv.current_state)
+        cost = -cost_calc(self.sourcingEnv.current_state)
+        return cost
 
     
 class Action():

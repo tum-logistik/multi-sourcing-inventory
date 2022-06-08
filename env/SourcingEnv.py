@@ -32,12 +32,8 @@ class SourcingEnv():
         self.event_space = [Event.DEMAND_ARRIVAL, Event.SUPPLY_ARRIVAL, Event.SUPPLIER_ON, Event.SUPPLIER_OFF, Event.NO_EVENT]
 
         self.action_size = order_quantity
-        self.single_sup_action_space = np.arange(0, self.action_size + 1, 1)
-        self.joint_action_space_nested = [self.single_sup_action_space]*self.n_suppliers
 
-        joint_action_space_list = [list(x) for x in it.product(*self.joint_action_space_nested)]
-        self.joint_action_space = np.array(joint_action_space_list)
-        
+        # Superfluous for the MCTS implementation
         self.n_steps = 0
         self.max_episodes = max_episodes
 
@@ -191,39 +187,13 @@ class SourcingEnv():
             assert event in [Event.DEMAND_ARRIVAL, Event.NO_EVENT], "AssertAssertion Failed: Unknown event."
 
         self.current_state = next_state
+
+        # Superfluous for the MCTS implementation
         self.n_steps += 1
-        
+        self.current_state.is_terminal = self.isTerminal()
+
         return next_state, event, i, event_probs, supplier_index
 
-
-class SourcingEnvMCTSWrapper():
-    def __init__(self, 
-        order_quantity = 30,
-        lambda_arrival = 10,
-        procurement_cost_vec = np.array([2, 1.7]), 
-        supplier_lead_times_vec = np.array([0.5, 0.75]), 
-        on_times = np.array([3, 1]), 
-        off_times = np.array([0.3, 1])):
-
-        self.sourcingEnv = sourcingEnv = SourcingEnv(
-            order_quantity = order_quantity,
-            lambda_arrival = lambda_arrival, # or 10
-            procurement_cost_vec = procurement_cost_vec,
-            supplier_lead_times_vec = supplier_lead_times_vec,
-            on_times = on_times, 
-            off_times = off_times
-        )
-    
-    def getCurrentPlayer(self):
-        return 1
-    
-    def getPossibleActions(self):
-        return self.sourcingEnv.joint_action_space
-    
-    def takeAction(self, action):
-        next_state, event, event_index, probs, supplier_index  = self.sourcingEnv.step(action)
-        return next_state
-    
     def isTerminal(self):
-        return self.sourcingEnv.n_steps > self.sourcingEnv.max_episodes
-    
+        # Superfluous for the MCTS implementation
+        return self.n_steps > self.max_episodes

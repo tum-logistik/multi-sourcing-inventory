@@ -68,8 +68,8 @@ def approx_value_iteration(sourcingEnv, initial_state,
     mean_cost = np.mean(mc_avg_costs)
     std = np.std(mc_avg_costs)
 
-    value_ini_ub = mean_cost + std
-    value_ini_lb = mean_cost - std
+    value_ini_ub = -mean_cost + std
+    value_ini_lb = -mean_cost - std
 
     # initialize states
     # dual sourcing 40k 
@@ -125,7 +125,7 @@ def approx_value_iteration(sourcingEnv, initial_state,
                                 if state_key in state_value_dic:
                                     avg_value_estimate = state_value_dic[state_key]
                                 else:
-                                    avg_value_estimate = np.mean(state_value_dic.values())
+                                    avg_value_estimate = np.mean(list(state_value_dic.values()))
                             
                             value += reward_contribution + avg_value_estimate
                     value_array[pa] = value
@@ -135,9 +135,18 @@ def approx_value_iteration(sourcingEnv, initial_state,
                 action_index = np.random.randint(0, len(possible_joint_actions))
                 print("eps explore")
             else:
-                action_index = np.argmax(value_array[np.nonzero(value_array)]) if len(value_array) > 0 else np.random.randint(0, len(possible_joint_actions))
+                if len(value_array) > 0:
+                    action_index = np.argmax(value_array[np.nonzero(value_array)])  
+                else: 
+                    action_index = np.random.randint(0, len(possible_joint_actions)) if len(possible_joint_actions) > 1 else None
+
                 print("step max V")
-            sourcingEnv.step(possible_joint_actions[action_index])
+            if action_index != None:
+                sourcingEnv.step(possible_joint_actions[action_index])
+            else:
+                # otherwise do nothing
+                sourcingEnv.step(np.array([0, 0]))
+            
             step_time = time.time() - step_start_time
             print("############ [STEP TIME] episode: {ep} | step: {st}| elapsed time: {time}".format(ep = str(e), time = str(step_time), st = str(m) ))
         episode_run_time = time.time() - episode_start_time

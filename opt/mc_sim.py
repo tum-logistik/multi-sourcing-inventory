@@ -84,7 +84,6 @@ def approx_value_iteration(sourcingEnv, initial_state):
                     print("state added: " + str(state_add)) 
     num_states = len(state_dic)
 
-
-
-
+    # Iterate all episodes, do periodic MC update.
+    
     return state_dic

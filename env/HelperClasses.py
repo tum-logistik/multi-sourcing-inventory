@@ -29,9 +29,9 @@ class MState():
         return "Stock: {fname}, n backorders: {nb}, supplier status (on/off): {sup_stat}".format(fname = self.s, nb = self.n_backorders, sup_stat = self.flag_on_off)
 
     def get_list_repr(self):
-        arr_rep = [self.s] + list(self.n_backorders) + list(self.flag_on_off)
+        arr_rep = [int(self.s)] + [int(x) for x in self.n_backorders] + [int(x) for x in self.flag_on_off]
         return arr_rep
 
     def get_repr_key(self):
-            return repr(self.get_list_repr())
+        return repr(self.get_list_repr())
 

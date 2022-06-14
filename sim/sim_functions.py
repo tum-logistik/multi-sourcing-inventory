@@ -8,3 +8,5 @@ def cost_calc(state, h_cost = H_COST, b_penalty = B_PENALTY):
     return cost
 
 
+def get_combo(y, n):
+    return np.array(np.meshgrid(*[range(0, y) for x in range(n)])).T.reshape(-1, n)

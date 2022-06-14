@@ -14,7 +14,7 @@ if __name__ == '__main__':
         on_times = np.array([1, 1]), 
         off_times = np.array([0.3, 1]))
 
-    s_initial = MState(stock_level = 50, 
+    s_initial = MState(stock_level = 2, 
         n_suppliers = N_SUPPLIERS, 
         n_backorders = np.array([0, 0]), 
         flag_on_off = np.array([1, 1]))

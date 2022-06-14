@@ -7,8 +7,8 @@ class SourcingEnv():
 
     # Switch to np.array for speed up
     def __init__(self, 
-        order_quantity = 30,
-        lambda_arrival = 10,
+        order_quantity = ACTION_SIZE,
+        lambda_arrival = LAMBDA,
         procurement_cost_vec = np.array([2, 1.7]), 
         supplier_lead_times_vec = np.array([0.5, 0.75]), 
         on_times = np.array([3, 1]), 

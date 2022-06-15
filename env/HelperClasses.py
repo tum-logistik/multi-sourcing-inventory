@@ -11,7 +11,6 @@ class Event(Enum):
     NO_EVENT = 4
 
 # indexed 0,1,2,3...
-# indexed 0,1,2,3...
 class MState():
 
     def __init__(self,

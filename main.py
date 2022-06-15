@@ -5,6 +5,7 @@ import numpy as np
 from opt.mc_sim import *
 import pickle
 from datetime import datetime
+import platform
 
 if __name__ == '__main__':
     print("#### Running Main Subroutine ####")
@@ -26,7 +27,9 @@ if __name__ == '__main__':
     now = datetime.now()
     date_time = now.strftime("%m-%d-%Y-%H-%M-%S")
 
-    with open('output/saved_value_dic_{dt}.pkl'.format(dt = str(date_time)), 'wb') as handle:
+    write_path = 'output/msource_value_dic_{dt}.pkl'.format(dt = str(date_time)) if 'larkin' in platform.node() else 'workspace/mount/msource_value_dic_{dt}.pkl'.format(dt = str(date_time))
+    
+    with open(write_path, 'wb') as handle:
         pickle.dump(state_value_dic, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    print("hi")
+    print("algorithm complete")

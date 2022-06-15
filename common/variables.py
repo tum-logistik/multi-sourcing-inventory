@@ -1,21 +1,27 @@
+import yaml
+
+with open("config/config_file.yaml", "r") as ymlfile:
+    cfg = yaml.safe_load(ymlfile)
+
 # Algo Params
-PROB_EPSILON = 0.00000001
-PERIODS = 50
-NESTED_MC_ITERS = 99
-MC_EPISODES = 10
-MAX_STEPS = 5
-EXPLORE_EPS = 0.05
+PROB_EPSILON = cfg['algo_params']['prob_epsilon']
+PERIODS = cfg['algo_params']['periods']
+NESTED_MC_ITERS = cfg['algo_params']['nested_mc_iters']
+MC_EPISODES = cfg['algo_params']['mc_episodes']
+MAX_STEPS = cfg['algo_params']['max_steps']
+EXPLORE_EPS = cfg['algo_params']['explore_eps']
 
 # SS policy
-H_COST = 1
-B_PENALTY = 9
-SMALL_S = 2
-BIG_S = 15
-N_SUPPLIERS = 2
-BACKORDER_MAX = -40
+H_COST = cfg['policy_params']['h_cost']
+B_PENALTY = cfg['policy_params']['b_penalty']
+SMALL_S = cfg['policy_params']['small_s']
+BIG_S = cfg['policy_params']['big_s']
+N_SUPPLIERS = cfg['policy_params']['n_suppliers']
+BACKORDER_MAX = cfg['policy_params']['backorder_max']
 
 # MDP Environment
-LAMBDA = 9
-STOCK_BOUND = 50
-ACTION_SIZE = 10
-DISCOUNT_FAC = 1.0
+LAMBDA = cfg['mdp_env_params']['lambda']
+STOCK_BOUND = cfg['mdp_env_params']['stock_bound']
+ACTION_SIZE = cfg['mdp_env_params']['action_size']
+DISCOUNT_FAC = cfg['mdp_env_params']['discount_fac']
+

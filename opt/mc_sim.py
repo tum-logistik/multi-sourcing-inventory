@@ -120,7 +120,7 @@ def approx_value_iteration(sourcingEnv, initial_state,
                                 value_estimates = mc_with_ss_policy(sourcingEnvCopy, potential_state)
                                 avg_value_estimate = -np.mean(value_estimates)
                                 state_value_dic[state_key] = avg_value_estimate
-                                # print("episode: {ep}  | step: {st} | potential_state: {ps}| pos ac: {pos_ac}".format(ep = str(e), st = str(m), pos_ac = str(pa), ps = str(potential_state)))
+                                print("episode: {ep}  | step: {st} | potential_state: {ps}| pos ac: {pos_ac}".format(ep = str(e), st = str(m), pos_ac = str(pa), ps = str(potential_state)))
                             else:
                                 if state_key in state_value_dic:
                                     avg_value_estimate = state_value_dic[state_key]

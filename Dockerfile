@@ -2,7 +2,6 @@ FROM python:3
 ADD *.py /
 ADD *.py /mount/
 ADD requirements.txt /
-ADD all_instances.json /
 ADD gurobi.lic /opt/gurobi/
 ADD gurobi.lic /opt/gurobi950/
 

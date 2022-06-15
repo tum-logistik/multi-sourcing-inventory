@@ -1,6 +1,9 @@
 import yaml
+import platform
 
-with open("config/config_file.yaml", "r") as ymlfile:
+config_path = "config/config_file.yaml" if "larkin" in platform.node() else "workspace/mount/multi-sourcing-inventory/config/config_file.yaml"
+
+with open(config_path, "r") as ymlfile:
     cfg = yaml.safe_load(ymlfile)
 
 # Algo Params

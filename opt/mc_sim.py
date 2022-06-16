@@ -101,34 +101,33 @@ def approx_value_iteration(sourcingEnv, initial_state,
         sourcingEnv.reset()
         for m in range(max_steps):
             step_start_time = time.time()
-            for a in range(sourcingEnv.action_size):
-                # careful about backlog order
-                possible_joint_actions = get_combo(int(max_stock - sourcingEnv.current_state.s), sourcingEnv.n_suppliers)
-                # We know the transition probabilities
-                value_array = np.zeros(len(possible_joint_actions))
-                for pa in range(len(possible_joint_actions)):
-                    value = 0
-                    event_probs = sourcingEnv.get_event_probs(possible_joint_actions[pa])
-                    for i in range(len(event_probs)):
-                        if event_probs[i] > 0:
-                            sourcingEnvCopy = copy.deepcopy(sourcingEnv)
-                            event_tuple = sourcingEnvCopy.get_event_tuple_from_index(i)
-                            potential_state, _,_,_,_ = sourcingEnvCopy.step(possible_joint_actions[pa], event_tuple)
-                            reward_contribution = - event_probs[i] * discount_fac * cost_calc(potential_state)
-                            state_key = potential_state.get_repr_key()
-                            if np.random.uniform(0, 1, 1)[0] < explore_eps:
-                                value_estimates = mc_with_ss_policy(sourcingEnvCopy, potential_state)
-                                avg_value_estimate = -np.mean(value_estimates)
-                                state_value_dic[state_key] = avg_value_estimate
-                                print("episode: {ep}  | step: {st} | potential_state: {ps}| pos ac: {pos_ac}".format(ep = str(e), st = str(m), pos_ac = str(pa), ps = str(potential_state)))
+            # careful about backlog order
+            possible_joint_actions = get_combo(int(max_stock - sourcingEnv.current_state.s), sourcingEnv.n_suppliers)
+            # We know the transition probabilities
+            value_array = np.zeros(len(possible_joint_actions))
+            for pa in range(len(possible_joint_actions)):
+                value = 0
+                event_probs = sourcingEnv.get_event_probs(possible_joint_actions[pa])
+                for i in range(len(event_probs)):
+                    if event_probs[i] > 0:
+                        sourcingEnvCopy = copy.deepcopy(sourcingEnv)
+                        event_tuple = sourcingEnvCopy.get_event_tuple_from_index(i)
+                        potential_state, _,_,_,_ = sourcingEnvCopy.step(possible_joint_actions[pa], event_tuple)
+                        reward_contribution = - event_probs[i] * discount_fac * cost_calc(potential_state)
+                        state_key = potential_state.get_repr_key()
+                        if np.random.uniform(0, 1, 1)[0] < explore_eps:
+                            value_estimates = mc_with_ss_policy(sourcingEnvCopy, potential_state)
+                            avg_value_estimate = -np.mean(value_estimates)
+                            state_value_dic[state_key] = avg_value_estimate
+                            print("episode: {ep}  | step: {st} | potential_state: {ps}| pos ac: {pos_ac}".format(ep = str(e), st = str(m), pos_ac = str(pa), ps = str(potential_state)))
+                        else:
+                            if state_key in state_value_dic:
+                                avg_value_estimate = state_value_dic[state_key]
                             else:
-                                if state_key in state_value_dic:
-                                    avg_value_estimate = state_value_dic[state_key]
-                                else:
-                                    avg_value_estimate = np.mean(list(state_value_dic.values()))
+                                avg_value_estimate = np.mean(list(state_value_dic.values()))
                             
-                            value += reward_contribution + avg_value_estimate
-                    value_array[pa] = value
+                        value += reward_contribution + avg_value_estimate
+                value_array[pa] = value
             
             # decide transition
             if np.random.uniform(0, 1, 1)[0] < explore_eps:

@@ -118,4 +118,3 @@ def run_test_scenario_3(sourcingEnv, n_sup = 2):
     print("##### Test Scenario (" + scenario_id + ") passed #####")
     return True
     
-        

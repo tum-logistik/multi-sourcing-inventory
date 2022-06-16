@@ -3,6 +3,9 @@ from sim.sim_functions import *
 from sim.policies import *
 import numpy as np
 from opt.mc_sim import *
+from opt.eval_policy import *
+import pickle as pkl
+
 
 if __name__ == '__main__':
     print("#### Running Main Simulation ####")
@@ -20,6 +23,19 @@ if __name__ == '__main__':
         supplier_lead_times_vec = np.array([0.8, 0.5]),
         on_times = np.array([1, 1]), 
         off_times = np.array([0.3, 1]))
+    
+    filename = "saved_models/msource_value_dic_06-16-2022-09-56-03.pkl"
+
+    with open(filename, 'rb') as f:
+        value_dic = pkl.load(f)
+
+    eval_steps = 50
+    mc_eval_iter = 3
+    mc_eval_policy_from_value_dic(sourcingEnv, value_dic, 
+        max_steps = eval_steps, mc_iters = mc_eval_iter)
+
+
+
     
     history = []
 

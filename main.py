@@ -27,7 +27,7 @@ if __name__ == '__main__':
     now = datetime.now()
     date_time = now.strftime("%m-%d-%Y-%H-%M-%S")
 
-    write_path = 'output/msource_value_dic_{dt}.pkl'.format(dt = str(date_time)) if 'larkin' in platform.node() else 'workspace/mount/msource_value_dic_{dt}.pkl'.format(dt = str(date_time))
+    write_path = 'output/msource_value_dic_{dt}.pkl'.format(dt = str(date_time)) if 'larkin' in platform.node() else 'workspace/mount/multi-sourcing-inventory/output/msource_value_dic_{dt}.pkl'.format(dt = str(date_time))
     
     with open(write_path, 'wb') as handle:
         pickle.dump(state_value_dic, handle, protocol=pickle.HIGHEST_PROTOCOL)

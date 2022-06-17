@@ -4,6 +4,9 @@ from sim.policies import *
 from sim.sim_functions import *
 import time
 from common.variables import *
+from datetime import datetime
+import pickle
+
 
 def mc_episode_with_ss_policy(sourcingEnv, 
     h_cost = H_COST, 
@@ -59,7 +62,8 @@ def approx_value_iteration(sourcingEnv, initial_state,
     discount_fac = DISCOUNT_FAC,
     explore_eps = EXPLORE_EPS,
     backorder_max = BACKORDER_MAX,
-    max_inven = STOCK_BOUND):
+    max_inven = MAX_INVEN,
+    model_args_dic = MODEL_ARGS_DIC):
     # initialize random values.array
     # simulate 5x as a first guess, and use a uniform range
     
@@ -95,7 +99,9 @@ def approx_value_iteration(sourcingEnv, initial_state,
     num_states = len(state_value_dic)
 
     # Iterate all episodes, do periodic MC update.
-    
+    now = datetime.now()
+    model_start_date_time = now.strftime("%m-%d-%Y-%H-%M-%S")
+
     for e in range(num_episodes):
         episode_start_time = time.time()
         sourcingEnv.reset()
@@ -140,7 +146,7 @@ def approx_value_iteration(sourcingEnv, initial_state,
                     action_index = np.random.randint(0, len(possible_joint_actions)) if len(possible_joint_actions) > 1 else None
 
                 print("step max V")
-            if action_index != None:
+            if action_index != None and sourcingEnv.current_state.s <= max_inven:
                 sourcingEnv.step(possible_joint_actions[action_index])
             else:
                 # otherwise do nothing
@@ -148,7 +154,15 @@ def approx_value_iteration(sourcingEnv, initial_state,
             
             step_time = time.time() - step_start_time
             print("############ [STEP TIME] episode: {ep} | step: {st}| elapsed time: {time}".format(ep = str(e), time = str(step_time), st = str(m) ))
+        
+        # model save every save_interval intervals
+        write_path = 'output/msource_value_dic_{dt}.pkl'.format(dt = str(model_start_date_time)) if 'larkin' in platform.node() else 'workspace/mount/multi-sourcing-inventory/output/msource_value_dic_{dt}.pkl'.format(dt = str(model_start_date_time))
+        output_obj = {"state_value_dic": state_value_dic, "model_params": model_args_dic}
+
+        with open(write_path, 'wb') as handle:
+            pickle.dump(output_obj, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        
         episode_run_time = time.time() - episode_start_time
         print("############ episode: {ep} | elapsed time: {time}".format(ep = str(e), time = str(episode_run_time) ))
     
-    return state_value_dic
+    return {"state_value_dic": state_value_dic, "model_params": model_args_dic}

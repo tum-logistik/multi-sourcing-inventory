@@ -21,10 +21,12 @@ SMALL_S = cfg['policy_params']['small_s']
 BIG_S = cfg['policy_params']['big_s']
 N_SUPPLIERS = cfg['policy_params']['n_suppliers']
 BACKORDER_MAX = cfg['policy_params']['backorder_max']
+INVEN_LIMIT = cfg['policy_params']['inven_limit']
 
 # MDP Environment
 LAMBDA = cfg['mdp_env_params']['lambda']
-STOCK_BOUND = cfg['mdp_env_params']['stock_bound']
+MAX_INVEN = cfg['mdp_env_params']['max_inven']
 ACTION_SIZE = cfg['mdp_env_params']['action_size']
 DISCOUNT_FAC = cfg['mdp_env_params']['discount_fac']
 
+MODEL_ARGS_DIC = cfg

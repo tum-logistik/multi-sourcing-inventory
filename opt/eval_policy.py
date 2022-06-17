@@ -6,6 +6,7 @@ from sim.sim_functions import *
 import time
 from common.variables import *
 
+
 def eval_policy_from_value_dic(sourcingEnv, value_dic, max_steps,
     max_stock = BIG_S,
     discount_fac = DISCOUNT_FAC,

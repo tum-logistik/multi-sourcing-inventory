@@ -136,16 +136,19 @@ def approx_value_iteration(sourcingEnv, initial_state,
                 value_array[pa] = value
             
             # decide transition
-            if np.random.uniform(0, 1, 1)[0] < explore_eps:
-                action_index = np.random.randint(0, len(possible_joint_actions))
-                print("eps explore")
-            else:
-                if len(value_array) > 0:
-                    action_index = np.argmax(value_array[np.nonzero(value_array)])  
-                else: 
-                    action_index = np.random.randint(0, len(possible_joint_actions)) if len(possible_joint_actions) > 1 else None
-
+            if len(possible_joint_actions) > 0:
+                if np.random.uniform(0, 1, 1)[0] < explore_eps:
+                    action_index = np.random.randint(0, len(possible_joint_actions))
+                    print("eps explore")
+                else:
+                    if len(value_array) > 0:
+                        action_index = np.argmax(value_array[np.nonzero(value_array)])  
+                    else: 
+                        action_index = np.random.randint(0, len(possible_joint_actions)) if len(possible_joint_actions) > 1 else None
                 print("step max V")
+            else:
+                action_index = None
+
             if action_index != None and sourcingEnv.current_state.s <= max_inven:
                 sourcingEnv.step(possible_joint_actions[action_index])
             else:

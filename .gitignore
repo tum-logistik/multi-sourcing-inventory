@@ -4,3 +4,4 @@ __pycache__*
 output/*.pkl
 config/*.yaml
 saved_models/*.pkl
+output/*.txt

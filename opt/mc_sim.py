@@ -58,7 +58,7 @@ def get_best_action():
 def approx_value_iteration(sourcingEnv, initial_state, 
     max_steps = MAX_STEPS, 
     num_episodes = MC_EPISODES,
-    max_stock = BIG_S,
+    max_stock = MAX_INVEN,
     discount_fac = DISCOUNT_FAC,
     explore_eps = EXPLORE_EPS,
     backorder_max = BACKORDER_MAX,
@@ -81,7 +81,7 @@ def approx_value_iteration(sourcingEnv, initial_state,
     sourcingEnv.reset()
      
     on_off_flags_combos = get_combo(2, sourcingEnv.n_suppliers)
-    back_log_combos = get_combo(max_stock+1 + backorder_max, sourcingEnv.n_suppliers)
+    back_log_combos = get_combo(max_stock - backorder_max + 1, sourcingEnv.n_suppliers)
 
     state_value_dic = {}
     i = 0
@@ -159,7 +159,7 @@ def approx_value_iteration(sourcingEnv, initial_state,
             print("############ [STEP TIME] episode: {ep} | step: {st}| elapsed time: {time}".format(ep = str(e), time = str(step_time), st = str(m) ))
         
         # model save every save_interval intervals
-        write_path = 'output/msource_value_dic_{dt}.pkl'.format(dt = str(model_start_date_time)) if 'larkin' in platform.node() else 'workspace/mount/multi-sourcing-inventory/output/msource_value_dic_{dt}.pkl'.format(dt = str(model_start_date_time))
+        write_path = 'output/msource_value_dic_{dt}_interval.pkl'.format(dt = str(model_start_date_time)) if 'larkin' in platform.node() else 'workspace/mount/multi-sourcing-inventory/output/msource_value_dic_{dt}.pkl'.format(dt = str(model_start_date_time))
         output_obj = {"state_value_dic": state_value_dic, "model_params": model_args_dic}
 
         with open(write_path, 'wb') as handle:

@@ -24,18 +24,18 @@ if __name__ == '__main__':
         on_times = np.array([1, 1]), 
         off_times = np.array([0.3, 1]))
     
-    filename = "saved_models/msource_value_dic_06-16-2022-09-56-03.pkl"
+    filename = "output/msource_value_dic_06-19-2022-07-57-03.pkl"
 
     with open(filename, 'rb') as f:
-        value_dic = pkl.load(f)
+        output_obj = pkl.load(f)
 
+    value_dic = output_obj["state_value_dic"]
+    model_params = output_obj["model_params"]
+    
     eval_steps = 50
     mc_eval_iter = 3
     mc_eval_policy_from_value_dic(sourcingEnv, value_dic, 
         max_steps = eval_steps, mc_iters = mc_eval_iter)
-
-
-
     
     history = []
 

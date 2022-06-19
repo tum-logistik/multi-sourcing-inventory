@@ -24,7 +24,9 @@ def eval_policy_from_value_dic(sourcingEnv, value_dic, max_steps,
 
         for pa in possible_joint_actions:
             event_probs = sourcingEnv.get_event_probs(pa)
-            
+            value_contrib = 0
+            reward_contrib = 0
+
             for e in range(len(event_probs)):
                 event, supplier_index = sourcingEnv.get_event_tuple_from_index(e)
 
@@ -42,16 +44,20 @@ def eval_policy_from_value_dic(sourcingEnv, value_dic, max_steps,
                     potential_next_state.flag_on_off[supplier_index] = 0
                     potential_next_state.n_backorders += pa
                 
-                potential_immediate_cost = cost_calc(potential_next_state, h_cost = h_cost, b_penalty = b_penalty)
+                potential_immediate_cost = -cost_calc(potential_next_state, h_cost = h_cost, b_penalty = b_penalty)
                 state_key = potential_next_state.get_repr_key()
 
+                reward_contrib += event_probs[e] * potential_immediate_cost
                 if state_key in value_dic:
                     potential_state_value = value_dic[state_key]
-                    q_value = -potential_immediate_cost + discount_fac * potential_state_value
 
-                    if q_value > max_q_value:
-                        max_q_value = q_value
-                        best_action = pa
+                    value_contrib += event_probs[e] * potential_state_value
+
+            q_value = round(reward_contrib + discount_fac*value_contrib, 3)
+
+            if q_value > max_q_value:
+                max_q_value = q_value
+                best_action = pa
 
         sourcingEnv.step(best_action)
 

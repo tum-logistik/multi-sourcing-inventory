@@ -63,7 +63,8 @@ def approx_value_iteration(sourcingEnv, initial_state,
     explore_eps = EXPLORE_EPS,
     backorder_max = BACKORDER_MAX,
     max_inven = MAX_INVEN,
-    model_args_dic = MODEL_ARGS_DIC):
+    model_args_dic = MODEL_ARGS_DIC,
+    debug_bool = DEBUG_BOOL):
     # initialize random values.array
     # simulate 5x as a first guess, and use a uniform range
     
@@ -129,7 +130,8 @@ def approx_value_iteration(sourcingEnv, initial_state,
                             value_estimates = mc_with_ss_policy(sourcingEnvCopy, potential_state)
                             avg_value_estimate = -np.mean(value_estimates)
                             state_value_dic[state_key] = avg_value_estimate
-                            # print("episode: {ep}  | step: {st} | potential_state: {ps}| vdic size: {vdic}".format(ep = str(e), st = str(m), ps = str(potential_state), vdic = str(len(state_value_dic))))
+                            if debug_bool:
+                                print("episode: {ep}  | step: {st} | potential_state: {ps}| vdic size: {vdic}".format(ep = str(e), st = str(m), ps = str(potential_state), vdic = str(len(state_value_dic))))
                         # if np.random.uniform(0, 1, 1)[0] < explore_eps:
                         # else:
                         #     avg_value_estimate = np.mean(list(state_value_dic.values()))

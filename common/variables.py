@@ -13,6 +13,7 @@ NESTED_MC_ITERS = cfg['algo_params']['nested_mc_iters']
 MC_EPISODES = cfg['algo_params']['mc_episodes']
 MAX_STEPS = cfg['algo_params']['max_steps']
 EXPLORE_EPS = cfg['algo_params']['explore_eps']
+DEBUG_BOOL = cfg['algo_params']['debug_bool']
 
 # SS policy
 H_COST = cfg['policy_params']['h_cost']

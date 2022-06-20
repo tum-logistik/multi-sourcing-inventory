@@ -84,19 +84,20 @@ def approx_value_iteration(sourcingEnv, initial_state,
     back_log_combos = get_combo(max_stock - backorder_max + 1, sourcingEnv.n_suppliers)
 
     state_value_dic = {}
-    i = 0
-    for stock in range(-backorder_max, max_inven+1):
-        for b_combo in back_log_combos:
-            for on_off_combo in on_off_flags_combos:
-                state_add = MState(stock_level = stock, 
-                    n_suppliers = sourcingEnv.n_suppliers, 
-                    n_backorders = b_combo, 
-                    flag_on_off = on_off_combo)
+
+    # i = 0
+    # for stock in range(-backorder_max, max_inven+1):
+    #     for b_combo in back_log_combos:
+    #         for on_off_combo in on_off_flags_combos:
+    #             state_add = MState(stock_level = stock, 
+    #                 n_suppliers = sourcingEnv.n_suppliers, 
+    #                 n_backorders = b_combo, 
+    #                 flag_on_off = on_off_combo)
                 
-                state_value_dic[state_add.get_repr_key()] = np.random.uniform(value_ini_lb, value_ini_ub,1)[0]
-                i += 1
+    #             state_value_dic[state_add.get_repr_key()] = np.random.uniform(value_ini_lb, value_ini_ub,1)[0]
+    #             i += 1
                 
-    num_states = len(state_value_dic)
+    # num_states = len(state_value_dic)
 
     # Iterate all episodes, do periodic MC update.
     now = datetime.now()
@@ -121,20 +122,22 @@ def approx_value_iteration(sourcingEnv, initial_state,
                         potential_state, _,_,_,_ = sourcingEnvCopy.step(possible_joint_actions[pa], event_tuple)
                         reward_contribution = - event_probs[i] * discount_fac * cost_calc(potential_state)
                         state_key = potential_state.get_repr_key()
-                        if np.random.uniform(0, 1, 1)[0] < explore_eps:
+
+                        if state_key in state_value_dic and np.random.uniform(0, 1, 1)[0] > explore_eps:
+                            avg_value_estimate = state_value_dic[state_key]
+                        else:
                             value_estimates = mc_with_ss_policy(sourcingEnvCopy, potential_state)
                             avg_value_estimate = -np.mean(value_estimates)
                             state_value_dic[state_key] = avg_value_estimate
-                            print("episode: {ep}  | step: {st} | potential_state: {ps}| pos ac: {pos_ac}".format(ep = str(e), st = str(m), pos_ac = str(pa), ps = str(potential_state)))
-                        else:
-                            if state_key in state_value_dic:
-                                avg_value_estimate = state_value_dic[state_key]
-                            else:
-                                avg_value_estimate = np.mean(list(state_value_dic.values()))
-                            
-                        value += reward_contribution + avg_value_estimate
+                            # print("episode: {ep}  | step: {st} | potential_state: {ps}| vdic size: {vdic}".format(ep = str(e), st = str(m), ps = str(potential_state), vdic = str(len(state_value_dic))))
+                        # if np.random.uniform(0, 1, 1)[0] < explore_eps:
+                        # else:
+                        #     avg_value_estimate = np.mean(list(state_value_dic.values()))
+
+                        value += reward_contribution + event_probs[i] * avg_value_estimate
+                
                 value_array[pa] = value
-            
+                
             # decide transition
             if len(possible_joint_actions) > 0:
                 if np.random.uniform(0, 1, 1)[0] < explore_eps:
@@ -148,19 +151,26 @@ def approx_value_iteration(sourcingEnv, initial_state,
                 print("step max V")
             else:
                 action_index = None
+            
+            state_add = sourcingEnv.current_state.get_repr_key()
+            if state_add not in state_value_dic and action_index is not None:
+                state_value_dic[state_add] = value_array[action_index]
 
             if action_index != None and sourcingEnv.current_state.s <= max_inven:
-                sourcingEnv.step(possible_joint_actions[action_index])
+                selected_action = possible_joint_actions[action_index]
             else:
                 # otherwise do nothing
-                sourcingEnv.step(np.array([0, 0]))
+                selected_action = np.array([0, 0])
+            next_state, event, _, _, supplier_index = sourcingEnv.step(selected_action)
             
             step_time = time.time() - step_start_time
-            print("############ [STEP TIME] episode: {ep} | step: {st}| elapsed time: {time}".format(ep = str(e), time = str(step_time), st = str(m) ))
+            
+            print("############ [STATE INFO] next_state: {ns} | event: {ev}| sel. act: {sa}| sup index: {sind}".format(ns= str(next_state), ev = str(event), sa = str(selected_action), sind = str(supplier_index)))
+            print("############ [STEP TIME] episode: {ep} | step: {st}| elapsed time: {time}".format(ep = str(e), time = str(step_time), st = str(m)))
         
         # model save every save_interval intervals
         write_path = 'output/msource_value_dic_{dt}_interval.pkl'.format(dt = str(model_start_date_time)) if 'larkin' in platform.node() else 'workspace/mount/multi-sourcing-inventory/output/msource_value_dic_{dt}.pkl'.format(dt = str(model_start_date_time))
-        output_obj = {"state_value_dic": state_value_dic, "model_params": model_args_dic}
+        output_obj = {"state_value_dic": state_value_dic, "model_params": model_args_dic, "mdp_env": sourcingEnv}
 
         with open(write_path, 'wb') as handle:
             pickle.dump(output_obj, handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -168,4 +178,4 @@ def approx_value_iteration(sourcingEnv, initial_state,
         episode_run_time = time.time() - episode_start_time
         print("############ episode: {ep} | elapsed time: {time}".format(ep = str(e), time = str(episode_run_time) ))
     
-    return {"state_value_dic": state_value_dic, "model_params": model_args_dic}
+    return {"state_value_dic": state_value_dic, "model_params": model_args_dic, "mdp_env": sourcingEnv}

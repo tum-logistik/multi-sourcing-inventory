@@ -31,5 +31,5 @@ if __name__ == '__main__':
     
     with open(write_path, 'wb') as handle:
         pickle.dump(state_value_dic, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-    print("algorithm complete")
+    
+    print("algorithm complete, wrote file to: " + write_path)

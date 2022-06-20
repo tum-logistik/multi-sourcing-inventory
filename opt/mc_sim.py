@@ -71,7 +71,7 @@ def approx_value_iteration(sourcingEnv, initial_state,
     now = datetime.now()
     date_time = now.strftime("%m-%d-%Y-%H-%M-%S")
 
-    debug_write_path = 'output/debug_output_{dt}.txt'.format(dt = str(date_time)) if 'larkin' in platform.node() else 'workspace/mount/multi-sourcing-inventory/output/debug_output_{dt}.pkl'.format(dt = str(date_time))
+    debug_write_path = 'output/debug_output_{dt}.txt'.format(dt = str(date_time)) if 'larkin' in platform.node() else 'workspace/mount/multi-sourcing-inventory/output/debug_output_{dt}.txt'.format(dt = str(date_time))
     with open(debug_write_path, 'a') as f:
         f.write("####### DEBUG OUTPUT ####### \n")
         f.close()

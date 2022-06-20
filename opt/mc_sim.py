@@ -68,6 +68,14 @@ def approx_value_iteration(sourcingEnv, initial_state,
     # initialize random values.array
     # simulate 5x as a first guess, and use a uniform range
     
+    now = datetime.now()
+    date_time = now.strftime("%m-%d-%Y-%H-%M-%S")
+
+    debug_write_path = 'output/debug_output_{dt}.txt'.format(dt = str(date_time)) if 'larkin' in platform.node() else 'workspace/mount/multi-sourcing-inventory/output/debug_output_{dt}.pkl'.format(dt = str(date_time))
+    with open(debug_write_path, 'a') as f:
+        f.write("####### DEBUG OUTPUT ####### \n")
+        f.close()
+
     mc_avg_costs = mc_with_ss_policy(sourcingEnv, start_state = initial_state)
     
     mean_cost = np.mean(mc_avg_costs)
@@ -141,18 +149,21 @@ def approx_value_iteration(sourcingEnv, initial_state,
                 value_array[pa] = value
                 
             # decide transition
+            trans_ac_type = "step max V"
             if len(possible_joint_actions) > 0:
                 if np.random.uniform(0, 1, 1)[0] < explore_eps:
                     action_index = np.random.randint(0, len(possible_joint_actions))
-                    print("eps explore")
+                    trans_ac_type = "eps explore"
                 else:
                     if len(value_array) > 0:
                         action_index = np.argmax(value_array[np.nonzero(value_array)])  
                     else: 
                         action_index = np.random.randint(0, len(possible_joint_actions)) if len(possible_joint_actions) > 1 else None
-                print("step max V")
             else:
                 action_index = None
+                trans_ac_type = "no selection of action"
+
+            print(trans_ac_type)
             
             state_add = sourcingEnv.current_state.get_repr_key()
             if state_add not in state_value_dic and action_index is not None:
@@ -163,13 +174,23 @@ def approx_value_iteration(sourcingEnv, initial_state,
             else:
                 # otherwise do nothing
                 selected_action = np.array([0, 0])
+            
             next_state, event, _, _, supplier_index = sourcingEnv.step(selected_action)
             
             step_time = time.time() - step_start_time
             
-            print("############ [STATE INFO] next_state: {ns} | event: {ev}| sel. act: {sa}| sup index: {sind}".format(ns= str(next_state), ev = str(event), sa = str(selected_action), sind = str(supplier_index)))
-            print("############ [STEP TIME] episode: {ep} | step: {st}| elapsed time: {time}".format(ep = str(e), time = str(step_time), st = str(m)))
-        
+            debug_trans_msg = "############ [STATE INFO] next_state: {ns} | event: {ev}| sel. act: {sa}| sup index: {sind}".format(ns= str(next_state), ev = str(event), sa = str(selected_action), sind = str(supplier_index))
+            debug_count_msg = "############ [STEP TIME] episode: {ep} | step: {st}| elapsed time: {time}".format(ep = str(e), time = str(step_time), st = str(m))
+            
+            with open(debug_write_path, 'a') as f:
+                f.write(trans_ac_type + "\n")
+                f.write(debug_trans_msg + "\n")
+                f.write(debug_count_msg + "\n")
+                f.close()
+
+            print(debug_trans_msg)
+            print(debug_count_msg)
+
         # model save every save_interval intervals
         write_path = 'output/msource_value_dic_{dt}_interval.pkl'.format(dt = str(model_start_date_time)) if 'larkin' in platform.node() else 'workspace/mount/multi-sourcing-inventory/output/msource_value_dic_{dt}.pkl'.format(dt = str(model_start_date_time))
         output_obj = {"state_value_dic": state_value_dic, "model_params": model_args_dic, "mdp_env": sourcingEnv}

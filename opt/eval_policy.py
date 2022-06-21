@@ -49,7 +49,7 @@ def eval_policy_from_value_dic(sourcingEnv, value_dic, max_steps,
 
                 reward_contrib += event_probs[e] * potential_immediate_cost
                 if state_key in value_dic:
-                    potential_state_value = value_dic[state_key]
+                    potential_state_value = value_dic[state_key][0]
 
                     value_contrib += event_probs[e] * potential_state_value
 

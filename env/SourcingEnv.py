@@ -7,8 +7,8 @@ class SourcingEnv():
 
     # Switch to np.array for speed up
     def __init__(self, 
-        order_quantity = 30,
-        lambda_arrival = 10,
+        order_quantity = ACTION_SIZE,
+        lambda_arrival = LAMBDA,
         procurement_cost_vec = np.array([2, 1.7]), 
         supplier_lead_times_vec = np.array([0.5, 0.75]), 
         on_times = np.array([3, 1]), 
@@ -130,7 +130,22 @@ class SourcingEnv():
         elif event == Event.SUPPLIER_OFF:
             i = 1 + 2*self.n_suppliers + supplier_index
         return i
-
+    
+    def get_event_tuple_from_index(self, i):
+        if i == 0:
+            event = Event.DEMAND_ARRIVAL
+            supplier_index = None
+        elif 0 < i < 1 + self.n_suppliers:
+            event = Event.SUPPLY_ARRIVAL # tuple includes (state, supplier)
+            supplier_index = i - 1
+        elif 1 + self.n_suppliers <= i < 1 + 2*self.n_suppliers:
+            event = Event.SUPPLIER_ON
+            supplier_index = i - 1 - self.n_suppliers
+        elif 1 + 2*self.n_suppliers <= i << 1 + 3*self.n_suppliers:
+            event = Event.SUPPLIER_OFF
+            supplier_index = i - 1 - 2*self.n_suppliers
+        return event, supplier_index
+    
     # .step(action), defaults to backorder model
     def step(self, order_quantity_vec, force_event_tuple = None):
 

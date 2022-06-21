@@ -1,3 +1,7 @@
 .*env
 __pycache__*
 .vscode
+output/*.pkl
+config/*.yaml
+saved_models/*.pkl
+output/*.txt

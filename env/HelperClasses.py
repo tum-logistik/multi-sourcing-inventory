@@ -1,5 +1,6 @@
 from enum import Enum
 import numpy as np
+from common.variables import *
 
 # indexed 0,1,2,3...
 class Event(Enum):
@@ -10,12 +11,11 @@ class Event(Enum):
     NO_EVENT = 4
 
 # indexed 0,1,2,3...
-# indexed 0,1,2,3...
 class MState():
 
     def __init__(self,
         stock_level = 0, 
-        n_suppliers = 2,
+        n_suppliers = N_SUPPLIERS,
         n_backorders = False,
         flag_on_off = False):
         
@@ -27,6 +27,10 @@ class MState():
     def __str__(self):
         return "Stock: {fname}, n backorders: {nb}, supplier status (on/off): {sup_stat}".format(fname = self.s, nb = self.n_backorders, sup_stat = self.flag_on_off)
 
+    def get_list_repr(self):
+        arr_rep = [int(self.s)] + [int(x) for x in self.n_backorders] + [int(x) for x in self.flag_on_off]
+        return arr_rep
 
-
+    def get_repr_key(self):
+        return repr(self.get_list_repr())
 

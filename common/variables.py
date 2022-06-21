@@ -14,6 +14,7 @@ MC_EPISODES = cfg['algo_params']['mc_episodes']
 MAX_STEPS = cfg['algo_params']['max_steps']
 EXPLORE_EPS = cfg['algo_params']['explore_eps']
 DEBUG_BOOL = cfg['algo_params']['debug_bool']
+FIXED_LEARN_RATE = cfg['algo_params']['fixed_learn_rate']
 
 # SS policy
 H_COST = cfg['policy_params']['h_cost']

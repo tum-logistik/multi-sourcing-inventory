@@ -5,13 +5,14 @@ from sim.policies import *
 from sim.sim_functions import *
 import time
 from common.variables import *
-
+from opt.mc_sim import *
 
 def eval_policy_from_value_dic(sourcingEnv, value_dic, max_steps,
     max_stock = BIG_S,
     discount_fac = DISCOUNT_FAC,
     h_cost = H_COST, 
-    b_penalty = B_PENALTY):
+    b_penalty = B_PENALTY,
+    n_visit_lim = 3):
 
     sourcingEnv.reset()
 
@@ -49,9 +50,16 @@ def eval_policy_from_value_dic(sourcingEnv, value_dic, max_steps,
 
                 reward_contrib += event_probs[e] * potential_immediate_cost
                 if state_key in value_dic:
-                    potential_state_value = value_dic[state_key][0]
-
+                    
+                    if value_dic[state_key][1] > n_visit_lim:
+                        potential_state_value = value_dic[state_key][0]
+                    else:
+                        eval_costs = mc_with_ss_policy(sourcingEnv, 
+                            periods = 10,
+                            nested_mc_iters = 30)
+                        potential_state_value = np.mean(eval_costs)
                     value_contrib += event_probs[e] * potential_state_value
+
 
             q_value = round(reward_contrib + discount_fac*value_contrib, 3)
 

@@ -12,9 +12,11 @@ def eval_policy_from_value_dic(sourcingEnv, value_dic, max_steps,
     discount_fac = DISCOUNT_FAC,
     h_cost = H_COST, 
     b_penalty = B_PENALTY,
-    n_visit_lim = 2,
+    n_visit_lim = N_VISIT_LIM,
     default_ss_policy = ss_policy_fastest_supp_backlog,
-    safe_factor = SAFE_FACTOR):
+    safe_factor = SAFE_FACTOR,
+    sub_eval_periods = SUB_EVAL_PERIODS,
+    sub_nested_mc_iter = SUB_NESTED_MC_ITER):
 
     sourcingEnv.reset()
 
@@ -60,8 +62,8 @@ def eval_policy_from_value_dic(sourcingEnv, value_dic, max_steps,
                     sourcingEnvCopy = copy.deepcopy(sourcingEnv)
                     sourcingEnvCopy.current_state = potential_next_state
                     eval_costs = mc_with_ss_policy(sourcingEnvCopy,
-                        periods = 30,
-                        nested_mc_iters = 30)
+                        periods = sub_eval_periods,
+                        nested_mc_iters = sub_nested_mc_iter)
                     potential_state_value = np.mean(eval_costs)
                 value_contrib += event_probs[e] * potential_state_value
             
@@ -89,8 +91,6 @@ def eval_policy_from_value_dic(sourcingEnv, value_dic, max_steps,
         cost_sum += cost_calc(sourcingEnv.current_state, h_cost = h_cost, b_penalty = b_penalty)
 
     return cost_sum
-
-
 
 def eval_policy_from_ss_pol_2(sourcingEnv, value_dic, max_steps,
     max_stock = BIG_S,

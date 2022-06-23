@@ -34,7 +34,7 @@ if __name__ == '__main__':
     
     eval_steps = 50
     mc_eval_iter = 3
-    mc_eval_policy_from_value_dic(sourcingEnv, value_dic, 
+    mc_eval_policy_perf(sourcingEnv, value_dic, 
         max_steps = eval_steps, mc_iters = mc_eval_iter)
     
     history = []

@@ -15,6 +15,8 @@ def mc_episode_with_ss_policy(sourcingEnv,
     periods = PERIODS, 
     ss_policy = ss_policy_fastest_supp_backlog):
 
+    sourcingEnv.reset()
+
     cost = cost_calc(sourcingEnv.current_state, h_cost = h_cost, b_penalty = b_penalty)
     total_costs = [cost]
     for i in range(periods):
@@ -33,7 +35,7 @@ def mc_with_ss_policy(sourcingEnv,
     small_s = SMALL_S, 
     big_s = BIG_S, 
     periods = PERIODS, 
-    ss_policy = ss_policy_fastest_supp_backlog, 
+    ss_policy_callback = ss_policy_fastest_supp_backlog, 
     nested_mc_iters = NESTED_MC_ITERS):
     
     mc_avg_costs = []
@@ -43,7 +45,7 @@ def mc_with_ss_policy(sourcingEnv,
             sourcingEnv.current_state = start_state
 
         start_time = time.time()
-        _, avg_cost = mc_episode_with_ss_policy(sourcingEnv, h_cost = h_cost, b_penalty = b_penalty, small_s = small_s, big_s = big_s, periods = periods, ss_policy = ss_policy)
+        _, avg_cost = mc_episode_with_ss_policy(sourcingEnv, h_cost = h_cost, b_penalty = b_penalty, small_s = small_s, big_s = big_s, periods = periods, ss_policy = ss_policy_callback)
         mc_avg_costs.append(avg_cost)
         run_time = time.time() - start_time
         # if i % 100 == 0:

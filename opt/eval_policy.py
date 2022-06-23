@@ -12,7 +12,8 @@ def eval_policy_from_value_dic(sourcingEnv, value_dic, max_steps,
     discount_fac = DISCOUNT_FAC,
     h_cost = H_COST, 
     b_penalty = B_PENALTY,
-    n_visit_lim = 3):
+    n_visit_lim = 3,
+    default_ss_policy = ss_policy_fastest_supp_backlog):
 
     sourcingEnv.reset()
 
@@ -22,6 +23,9 @@ def eval_policy_from_value_dic(sourcingEnv, value_dic, max_steps,
         possible_joint_actions = get_combo(int(max_stock - sourcingEnv.current_state.s), sourcingEnv.n_suppliers)
         max_q_value = -np.Inf
         best_action = np.zeros(sourcingEnv.n_suppliers) # order nothing is the supposed best action
+
+        ss_action = default_ss_policy(sourcingEnv)
+        q_value_ss = None
 
         for pa in possible_joint_actions:
             event_probs = sourcingEnv.get_event_probs(pa)
@@ -55,18 +59,29 @@ def eval_policy_from_value_dic(sourcingEnv, value_dic, max_steps,
                         potential_state_value = value_dic[state_key][0]
                     else:
                         eval_costs = mc_with_ss_policy(sourcingEnv, 
-                            periods = 10,
+                            periods = 30,
                             nested_mc_iters = 30)
                         potential_state_value = np.mean(eval_costs)
                     value_contrib += event_probs[e] * potential_state_value
-
-
+            
             q_value = round(reward_contrib + discount_fac*value_contrib, 3)
 
             if q_value > max_q_value:
                 max_q_value = q_value
-                best_action = pa
-
+                best_action_adp = pa
+            
+            # compute q value from sS policy action
+            if (pa == ss_action).all():
+                q_value_ss = q_value
+        
+        # determining action to take
+        if q_value_ss == None:
+            best_action = best_action_adp
+        elif round(max_q_value, 1) > q_value_ss:
+            best_action = best_action_adp
+        else:
+            best_action = ss_action
+        
         sourcingEnv.step(best_action)
 
         cost_sum += cost_calc(sourcingEnv.current_state, h_cost = h_cost, b_penalty = b_penalty)
@@ -74,11 +89,31 @@ def eval_policy_from_value_dic(sourcingEnv, value_dic, max_steps,
     return cost_sum
 
 
-def mc_eval_policy_from_value_dic(sourcingEnv, value_dic, max_steps = 1, mc_iters = 2,
+def eval_policy_from_ss_pol(sourcingEnv, value_dic, max_steps,
+    discount_fac = DISCOUNT_FAC,
+    h_cost = H_COST, 
+    b_penalty = B_PENALTY,
+    default_ss_policy = ss_policy_fastest_supp_backlog):
+
+    sourcingEnv.reset()
+
+    cost_sum = 0
+    cost_sum += cost_calc(sourcingEnv.current_state, h_cost = h_cost, b_penalty = b_penalty)
+    for m in range(max_steps):
+        ss_action = default_ss_policy(sourcingEnv)
+        sourcingEnv.step(ss_action)
+        cost_sum += cost_calc(sourcingEnv.current_state, h_cost = h_cost, b_penalty = b_penalty)
+
+    return cost_sum
+
+
+
+def mc_eval_policy_perf(sourcingEnv, value_dic, max_steps = 1, mc_iters = 2,
     max_stock = BIG_S,
     discount_fac = DISCOUNT_FAC,
     h_cost = H_COST, 
-    b_penalty = B_PENALTY):
+    b_penalty = B_PENALTY,
+    policy_callback = eval_policy_from_value_dic):
 
     costs = []
     for mc in range(mc_iters):

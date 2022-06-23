@@ -13,7 +13,8 @@ def eval_policy_from_value_dic(sourcingEnv, value_dic, max_steps,
     h_cost = H_COST, 
     b_penalty = B_PENALTY,
     n_visit_lim = 2,
-    default_ss_policy = ss_policy_fastest_supp_backlog):
+    default_ss_policy = ss_policy_fastest_supp_backlog,
+    safe_factor = SAFE_FACTOR):
 
     sourcingEnv.reset()
 
@@ -53,17 +54,16 @@ def eval_policy_from_value_dic(sourcingEnv, value_dic, max_steps,
                 state_key = potential_next_state.get_repr_key()
 
                 reward_contrib += event_probs[e] * potential_immediate_cost
-                if state_key in value_dic:
-                    if value_dic[state_key][1] > n_visit_lim:
+                if state_key in value_dic and value_dic[state_key][1] > n_visit_lim:
                         potential_state_value = value_dic[state_key][0]
-                    else:
-                        sourcingEnvCopy = copy.deepcopy(sourcingEnv)
-                        sourcingEnvCopy.current_state = potential_next_state
-                        eval_costs = mc_with_ss_policy(sourcingEnvCopy,
-                            periods = 10,
-                            nested_mc_iters = 30)
-                        potential_state_value = np.mean(eval_costs)
-                    value_contrib += event_probs[e] * potential_state_value
+                else:
+                    sourcingEnvCopy = copy.deepcopy(sourcingEnv)
+                    sourcingEnvCopy.current_state = potential_next_state
+                    eval_costs = mc_with_ss_policy(sourcingEnvCopy,
+                        periods = 30,
+                        nested_mc_iters = 30)
+                    potential_state_value = np.mean(eval_costs)
+                value_contrib += event_probs[e] * potential_state_value
             
             q_value = round(reward_contrib + discount_fac*value_contrib, 3)
 
@@ -76,14 +76,15 @@ def eval_policy_from_value_dic(sourcingEnv, value_dic, max_steps,
                 q_value_ss = q_value
         
         # determining action to take
+        sf = 1/safe_factor if q_value_ss is not None and q_value_ss < 0 else safe_factor
         if q_value_ss == None:
             best_action = ss_action
-        elif round(max_q_value, 1) > q_value_ss*2.5:
+        elif round(max_q_value, 1) > q_value_ss*sf:
             best_action = best_action_adp
         else:
             best_action = ss_action
         
-        sourcingEnv.step(ss_action)
+        sourcingEnv.step(best_action)
 
         cost_sum += cost_calc(sourcingEnv.current_state, h_cost = h_cost, b_penalty = b_penalty)
 

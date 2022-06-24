@@ -7,7 +7,6 @@ from common.variables import *
 from datetime import datetime
 import pickle
 
-
 def mc_episode_with_ss_policy(sourcingEnv, 
     h_cost = H_COST, 
     b_penalty = B_PENALTY, 
@@ -15,6 +14,8 @@ def mc_episode_with_ss_policy(sourcingEnv,
     big_s = BIG_S, 
     periods = PERIODS, 
     ss_policy = ss_policy_fastest_supp_backlog):
+
+    sourcingEnv.reset()
 
     cost = cost_calc(sourcingEnv.current_state, h_cost = h_cost, b_penalty = b_penalty)
     total_costs = [cost]
@@ -34,7 +35,7 @@ def mc_with_ss_policy(sourcingEnv,
     small_s = SMALL_S, 
     big_s = BIG_S, 
     periods = PERIODS, 
-    ss_policy = ss_policy_fastest_supp_backlog, 
+    ss_policy_callback = ss_policy_fastest_supp_backlog, 
     nested_mc_iters = NESTED_MC_ITERS):
     
     mc_avg_costs = []
@@ -44,16 +45,13 @@ def mc_with_ss_policy(sourcingEnv,
             sourcingEnv.current_state = start_state
 
         start_time = time.time()
-        _, avg_cost = mc_episode_with_ss_policy(sourcingEnv, h_cost = h_cost, b_penalty = b_penalty, small_s = small_s, big_s = big_s, periods = periods, ss_policy = ss_policy)
+        _, avg_cost = mc_episode_with_ss_policy(sourcingEnv, h_cost = h_cost, b_penalty = b_penalty, small_s = small_s, big_s = big_s, periods = periods, ss_policy = ss_policy_callback)
         mc_avg_costs.append(avg_cost)
         run_time = time.time() - start_time
         # if i % 100 == 0:
         #     print("time per 100 iter: " + str(run_time))
     
     return mc_avg_costs
-
-def get_best_action():
-    return 1
 
 def approx_value_iteration(sourcingEnv, initial_state, 
     max_steps = MAX_STEPS, 
@@ -64,7 +62,8 @@ def approx_value_iteration(sourcingEnv, initial_state,
     backorder_max = BACKORDER_MAX,
     max_inven = MAX_INVEN,
     model_args_dic = MODEL_ARGS_DIC,
-    debug_bool = DEBUG_BOOL):
+    debug_bool = DEBUG_BOOL,
+    learn_rate = FIXED_LEARN_RATE):
     # initialize random values.array
     # simulate 5x as a first guess, and use a uniform range
     
@@ -75,38 +74,10 @@ def approx_value_iteration(sourcingEnv, initial_state,
     with open(debug_write_path, 'a') as f:
         f.write("####### DEBUG OUTPUT ####### \n")
         f.close()
-
-    mc_avg_costs = mc_with_ss_policy(sourcingEnv, start_state = initial_state)
-    
-    mean_cost = np.mean(mc_avg_costs)
-    std = np.std(mc_avg_costs)
-
-    value_ini_ub = -mean_cost + std
-    value_ini_lb = -mean_cost - std
-
-    # initialize states
-    # dual sourcing 40k 
-    # 3x sourcing 800k states
-    sourcingEnv.reset()
-     
-    on_off_flags_combos = get_combo(2, sourcingEnv.n_suppliers)
-    back_log_combos = get_combo(max_stock - backorder_max + 1, sourcingEnv.n_suppliers)
-
+        
+    # initialize states, ex. dual sourcing 40k, 3x sourcing 800k states
     state_value_dic = {}
-
-    # i = 0
-    # for stock in range(-backorder_max, max_inven+1):
-    #     for b_combo in back_log_combos:
-    #         for on_off_combo in on_off_flags_combos:
-    #             state_add = MState(stock_level = stock, 
-    #                 n_suppliers = sourcingEnv.n_suppliers, 
-    #                 n_backorders = b_combo, 
-    #                 flag_on_off = on_off_combo)
-                
-    #             state_value_dic[state_add.get_repr_key()] = np.random.uniform(value_ini_lb, value_ini_ub,1)[0]
-    #             i += 1
-                
-    # num_states = len(state_value_dic)
+    sourcingEnv.reset()
 
     # Iterate all episodes, do periodic MC update.
     now = datetime.now()
@@ -132,14 +103,27 @@ def approx_value_iteration(sourcingEnv, initial_state,
                         reward_contribution = - event_probs[i] * discount_fac * cost_calc(potential_state)
                         state_key = potential_state.get_repr_key()
 
+                        # state_value_dic is a tuple (value, n_visits)
                         if state_key in state_value_dic and np.random.uniform(0, 1, 1)[0] > explore_eps:
-                            avg_value_estimate = state_value_dic[state_key]
+                            avg_value_estimate = state_value_dic[state_key][0]
+                            # Update state visit
+                            state_value_dic[state_key]= (avg_value_estimate, state_value_dic[state_key][1] + 1)
                         else:
+                            # there is a explore_eps chance of state-value re-estimation, and value update
                             value_estimates = mc_with_ss_policy(sourcingEnvCopy, potential_state)
                             avg_value_estimate = -np.mean(value_estimates)
-                            state_value_dic[state_key] = avg_value_estimate
+
+                            # value update on the MC explored states
+                            if state_key not in state_value_dic:
+                                state_value_dic[state_key] = (avg_value_estimate, 1)
+                            else:
+                                old_value = state_value_dic[state_key][0]
+                                new_value_adap = (1 - learn_rate)*old_value + learn_rate*avg_value_estimate
+                                state_value_dic[state_key] = (new_value_adap, state_value_dic[state_key][1] + 1)
+                            
                             if debug_bool:
                                 print("episode: {ep}  | step: {st} | potential_state: {ps}| vdic size: {vdic}".format(ep = str(e), st = str(m), ps = str(potential_state), vdic = str(len(state_value_dic))))
+                            
                         # if np.random.uniform(0, 1, 1)[0] < explore_eps:
                         # else:
                         #     avg_value_estimate = np.mean(list(state_value_dic.values()))
@@ -166,8 +150,14 @@ def approx_value_iteration(sourcingEnv, initial_state,
             print(trans_ac_type)
             
             state_add = sourcingEnv.current_state.get_repr_key()
+
+            # Value update on the current state
             if state_add not in state_value_dic and action_index is not None:
-                state_value_dic[state_add] = value_array[action_index]
+                state_value_dic[state_add] = (value_array[action_index], 1)
+            elif state_add in state_value_dic and action_index is not None:
+                old_value = state_value_dic[state_add][0]
+                new_value_adap = (1 - learn_rate)*old_value + learn_rate*value_array[action_index]
+                state_value_dic[state_add] = (new_value_adap, state_value_dic[state_add][1] + 1)
 
             if action_index != None and sourcingEnv.current_state.s <= max_inven:
                 selected_action = possible_joint_actions[action_index]
@@ -202,3 +192,34 @@ def approx_value_iteration(sourcingEnv, initial_state,
         print("############ episode: {ep} | elapsed time: {time}".format(ep = str(e), time = str(episode_run_time) ))
     
     return {"state_value_dic": state_value_dic, "model_params": model_args_dic, "mdp_env": sourcingEnv}
+
+
+def find_opt_ss_policy_via_mc(sourcingEnv, 
+    periods = PERIODS,
+    nested_mc_iters = NESTED_MC_ITERS,
+    h_cost = H_COST,
+    b_penalty = B_PENALTY,
+    max_S = MAX_INVEN):
+
+    best_val = -np.Inf
+    best_small_s = 0
+    best_big_s = 1
+
+    for small_s in range(0, max_S):
+        for big_s in range(small_s+1, max_S):
+            mc_avg_costs = mc_with_ss_policy(sourcingEnv, 
+                periods = periods,
+                nested_mc_iters = nested_mc_iters,
+                big_s = big_s,
+                small_s = small_s,
+                h_cost = h_cost,
+                b_penalty = b_penalty)
+            value = -np.mean(mc_avg_costs)
+            if value > best_val:
+                best_val = value
+                best_big_s = big_s
+                best_small_s = small_s
+
+                print("new best value: " + str((best_small_s, best_big_s, best_val)))
+    
+    return best_small_s, best_big_s, best_val

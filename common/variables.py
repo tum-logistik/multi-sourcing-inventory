@@ -14,6 +14,7 @@ MC_EPISODES = cfg['algo_params']['mc_episodes']
 MAX_STEPS = cfg['algo_params']['max_steps']
 EXPLORE_EPS = cfg['algo_params']['explore_eps']
 DEBUG_BOOL = cfg['algo_params']['debug_bool']
+FIXED_LEARN_RATE = cfg['algo_params']['fixed_learn_rate']
 
 # SS policy
 H_COST = cfg['policy_params']['h_cost']
@@ -29,5 +30,11 @@ LAMBDA = cfg['mdp_env_params']['lambda']
 MAX_INVEN = cfg['mdp_env_params']['max_inven']
 ACTION_SIZE = cfg['mdp_env_params']['action_size']
 DISCOUNT_FAC = cfg['mdp_env_params']['discount_fac']
+
+# Evaluation Params
+SAFE_FACTOR = cfg['eval_params']['safe_factor'] if 'safe_factor' in cfg['eval_params'] else 1.0
+N_VISIT_LIM = cfg['eval_params']['n_visit_limit'] if 'safe_factor' in cfg['eval_params'] else 2
+SUB_EVAL_PERIODS = cfg['eval_params']['sub_eval_periods'] if 'sub_eval_periods' in cfg['eval_params'] else 1.0
+SUB_NESTED_MC_ITER = cfg['eval_params']['sub_nested_mc_iter'] if 'sub_nested_mc_iter' in cfg['eval_params'] else 1.0
 
 MODEL_ARGS_DIC = cfg

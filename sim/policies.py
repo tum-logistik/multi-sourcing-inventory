@@ -1,4 +1,5 @@
 import numpy as np
+from common.variables import *
 
 def ss_policy(inventory_level, small_s, big_s):
 
@@ -33,7 +34,7 @@ def ss_policy_rand_supp_backlog(sourcingEnv, small_s, big_s):
 
 
 # order from quickest available supplier
-def ss_policy_fastest_supp_backlog(sourcingEnv, small_s, big_s):
+def ss_policy_fastest_supp_backlog(sourcingEnv, small_s = SMALL_S, big_s = BIG_S):
 
     ss_pol_suggest = ss_policy(sourcingEnv.current_state.s, small_s = small_s, big_s = big_s) 
     total_order_amount = np.clip(ss_pol_suggest- np.sum(sourcingEnv.current_state.n_backorders), 0, big_s)
@@ -45,6 +46,8 @@ def ss_policy_fastest_supp_backlog(sourcingEnv, small_s, big_s):
     policy_action[supp_index] = total_order_amount
     
     return policy_action
+
 # implement single supplier newsvendor,
 # implement kiesmueller heuristic,
+# implement dual index policy
 

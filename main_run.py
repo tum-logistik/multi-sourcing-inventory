@@ -24,7 +24,7 @@ if __name__ == '__main__':
         on_times = np.array([1, 1]), 
         off_times = np.array([0.3, 1]))
     
-    filename = "output/msource_value_dic_06-19-2022-07-57-03.pkl"
+    filename = "output/msource_value_dic_06-21-2022-16-24-05.pkl"
 
     with open(filename, 'rb') as f:
         output_obj = pkl.load(f)
@@ -34,7 +34,7 @@ if __name__ == '__main__':
     
     eval_steps = 50
     mc_eval_iter = 3
-    mc_eval_policy_from_value_dic(sourcingEnv, value_dic, 
+    mc_eval_policy_perf(sourcingEnv, value_dic, 
         max_steps = eval_steps, mc_iters = mc_eval_iter)
     
     history = []

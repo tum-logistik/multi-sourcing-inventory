@@ -5,13 +5,18 @@ from sim.policies import *
 from sim.sim_functions import *
 import time
 from common.variables import *
-
+from opt.mc_sim import *
 
 def eval_policy_from_value_dic(sourcingEnv, value_dic, max_steps,
     max_stock = BIG_S,
     discount_fac = DISCOUNT_FAC,
     h_cost = H_COST, 
-    b_penalty = B_PENALTY):
+    b_penalty = B_PENALTY,
+    n_visit_lim = N_VISIT_LIM,
+    default_ss_policy = ss_policy_fastest_supp_backlog,
+    safe_factor = SAFE_FACTOR,
+    sub_eval_periods = SUB_EVAL_PERIODS,
+    sub_nested_mc_iter = SUB_NESTED_MC_ITER):
 
     sourcingEnv.reset()
 
@@ -21,6 +26,9 @@ def eval_policy_from_value_dic(sourcingEnv, value_dic, max_steps,
         possible_joint_actions = get_combo(int(max_stock - sourcingEnv.current_state.s), sourcingEnv.n_suppliers)
         max_q_value = -np.Inf
         best_action = np.zeros(sourcingEnv.n_suppliers) # order nothing is the supposed best action
+
+        ss_action = default_ss_policy(sourcingEnv)
+        q_value_ss = None
 
         for pa in possible_joint_actions:
             event_probs = sourcingEnv.get_event_probs(pa)
@@ -48,35 +56,55 @@ def eval_policy_from_value_dic(sourcingEnv, value_dic, max_steps,
                 state_key = potential_next_state.get_repr_key()
 
                 reward_contrib += event_probs[e] * potential_immediate_cost
-                if state_key in value_dic:
-                    potential_state_value = value_dic[state_key]
-
-                    value_contrib += event_probs[e] * potential_state_value
-
+                if state_key in value_dic and value_dic[state_key][1] > n_visit_lim:
+                        potential_state_value = value_dic[state_key][0]
+                else:
+                    sourcingEnvCopy = copy.deepcopy(sourcingEnv)
+                    sourcingEnvCopy.current_state = potential_next_state
+                    eval_costs = mc_with_ss_policy(sourcingEnvCopy,
+                        periods = sub_eval_periods,
+                        nested_mc_iters = sub_nested_mc_iter)
+                    potential_state_value = np.mean(eval_costs)
+                value_contrib += event_probs[e] * potential_state_value
+            
             q_value = round(reward_contrib + discount_fac*value_contrib, 3)
 
             if q_value > max_q_value:
                 max_q_value = q_value
-                best_action = pa
-
+                best_action_adp = pa
+            
+            # compute q value from sS policy action
+            if (pa == ss_action).all():
+                q_value_ss = q_value
+        
+        # determining action to take
+        sf = 1/safe_factor if q_value_ss is not None and q_value_ss < 0 else safe_factor
+        if q_value_ss == None:
+            best_action = ss_action
+        elif round(max_q_value, 1) > q_value_ss*sf:
+            best_action = best_action_adp
+        else:
+            best_action = ss_action
+        
         sourcingEnv.step(best_action)
 
         cost_sum += cost_calc(sourcingEnv.current_state, h_cost = h_cost, b_penalty = b_penalty)
 
     return cost_sum
 
-
-def mc_eval_policy_from_value_dic(sourcingEnv, value_dic, max_steps = 1, mc_iters = 2,
-    max_stock = BIG_S,
+def mc_eval_policy_perf(sourcingEnv, value_dic, 
+    max_steps = MAX_STEPS, 
+    mc_iters = MC_EPISODES,
     discount_fac = DISCOUNT_FAC,
     h_cost = H_COST, 
-    b_penalty = B_PENALTY):
+    b_penalty = B_PENALTY,
+    policy_callback = eval_policy_from_value_dic):
 
     costs = []
     for mc in range(mc_iters):
-        cost = eval_policy_from_value_dic(sourcingEnv, value_dic, max_steps, 
-            max_stock = max_stock, discount_fac = discount_fac, h_cost = h_cost, b_penalty = b_penalty)
+        cost = policy_callback(sourcingEnv, value_dic, max_steps, discount_fac = discount_fac, h_cost = h_cost, b_penalty = b_penalty)
         costs.append(cost)
         print("MC eval iter: " + str(mc))
     
     return costs
+

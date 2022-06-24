@@ -92,45 +92,9 @@ def eval_policy_from_value_dic(sourcingEnv, value_dic, max_steps,
 
     return cost_sum
 
-def eval_policy_from_ss_pol_2(sourcingEnv, value_dic, max_steps,
-    max_stock = BIG_S,
-    discount_fac = DISCOUNT_FAC,
-    h_cost = H_COST, 
-    b_penalty = B_PENALTY,
-    default_ss_policy = ss_policy_fastest_supp_backlog):
-
-    sourcingEnv.reset()
-
-    cost_sum = 0
-    cost_sum += cost_calc(sourcingEnv.current_state, h_cost = h_cost, b_penalty = b_penalty)
-    for m in range(max_steps):
-        
-        best_action = default_ss_policy(sourcingEnv)
-        sourcingEnv.step(best_action)
-        cost_sum += cost_calc(sourcingEnv.current_state, h_cost = h_cost, b_penalty = b_penalty)
-
-    return cost_sum
-
-
-def eval_policy_from_ss_pol(sourcingEnv, value_dic, max_steps,
-    discount_fac = DISCOUNT_FAC,
-    h_cost = H_COST, 
-    b_penalty = B_PENALTY,
-    default_ss_policy = ss_policy_fastest_supp_backlog):
-
-    sourcingEnv.reset()
-
-    cost_sum = 0
-    cost_sum += cost_calc(sourcingEnv.current_state, h_cost = h_cost, b_penalty = b_penalty)
-    for m in range(max_steps):
-        ss_action = default_ss_policy(sourcingEnv)
-        sourcingEnv.step(ss_action)
-        cost_sum += cost_calc(sourcingEnv.current_state, h_cost = h_cost, b_penalty = b_penalty)
-
-    return cost_sum
-
-
-def mc_eval_policy_perf(sourcingEnv, value_dic, max_steps = 1, mc_iters = 2,
+def mc_eval_policy_perf(sourcingEnv, value_dic, 
+    max_steps = MAX_STEPS, 
+    mc_iters = MC_EPISODES,
     discount_fac = DISCOUNT_FAC,
     h_cost = H_COST, 
     b_penalty = B_PENALTY,

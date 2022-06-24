@@ -53,9 +53,6 @@ def mc_with_ss_policy(sourcingEnv,
     
     return mc_avg_costs
 
-def get_best_action():
-    return 1
-
 def approx_value_iteration(sourcingEnv, initial_state, 
     max_steps = MAX_STEPS, 
     num_episodes = MC_EPISODES,
@@ -77,24 +74,10 @@ def approx_value_iteration(sourcingEnv, initial_state,
     with open(debug_write_path, 'a') as f:
         f.write("####### DEBUG OUTPUT ####### \n")
         f.close()
-
-    mc_avg_costs = mc_with_ss_policy(sourcingEnv, start_state = initial_state)
-    
-    mean_cost = np.mean(mc_avg_costs)
-    std = np.std(mc_avg_costs)
-
-    value_ini_ub = -mean_cost + std
-    value_ini_lb = -mean_cost - std
-
-    # initialize states
-    # dual sourcing 40k 
-    # 3x sourcing 800k states
-    sourcingEnv.reset()
-     
-    on_off_flags_combos = get_combo(2, sourcingEnv.n_suppliers)
-    back_log_combos = get_combo(max_stock - backorder_max + 1, sourcingEnv.n_suppliers)
-
+        
+    # initialize states, ex. dual sourcing 40k, 3x sourcing 800k states
     state_value_dic = {}
+    sourcingEnv.reset()
 
     # Iterate all episodes, do periodic MC update.
     now = datetime.now()

@@ -46,6 +46,8 @@ def ss_policy_fastest_supp_backlog(sourcingEnv, small_s = SMALL_S, big_s = BIG_S
     policy_action[supp_index] = total_order_amount
     
     return policy_action
+
 # implement single supplier newsvendor,
 # implement kiesmueller heuristic,
+# implement dual index policy
 

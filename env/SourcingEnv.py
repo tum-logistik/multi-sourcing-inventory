@@ -26,6 +26,10 @@ class SourcingEnv():
         self.n_suppliers = len(procurement_cost_vec)
         _ = self.reset()
 
+        # Dual indexing variables
+        self.action_history_tuple = []
+        self.demand_history_tuple = []
+
         self.mu_lt_rate = invert_np(self.supplier_lead_times_vec)
         self.mu_on_times = invert_np(self.on_times)
         self.mu_off_times = invert_np(self.off_times)
@@ -40,7 +44,20 @@ class SourcingEnv():
     def reset(self):
         initial_state = MState(n_suppliers = self.n_suppliers)
         self.current_state = initial_state
+
+        self.action_history_tuple = []
+        self.demand_history_tuple = []
         return initial_state
+
+    def append_time_tuple(self, tuple_list, time_n_action):
+        
+        if len(self.action_history_tuple) == 0:
+            return tuple_list + [time_n_action]
+        else:
+            time_n_action[0] = self.action_history_tuple[-1][0] + time_n_action[0]
+            return tuple_list + [time_n_action]
+        
+        return 0
 
     # order_quantity_vec is action (tau)
     def compute_event_arrival_time(self, order_quantity_vec, 
@@ -166,6 +183,9 @@ class SourcingEnv():
             event = Event.DEMAND_ARRIVAL
             next_state.s = next_state.s - 1
             supplier_index = None
+
+            self.demand_history_tuple = self.append_time_tuple(self.demand_history_tuple, [event_probs[i], 1])
+
         elif 0 < i < 1 + self.n_suppliers:
             event = Event.SUPPLY_ARRIVAL
             supplier_index = i-1
@@ -185,11 +205,13 @@ class SourcingEnv():
             event = Event.NO_EVENT # No state transition
             supplier_index = None
         
+        self.action_history_tuple = self.append_time_tuple(self.action_history_tuple, [event_probs[i], order_quantity_vec])
+        
         # Assume when supplier is unavailable, no addition to backlog.
         for k in range(self.n_suppliers):
             if self.current_state.flag_on_off[k] == 1:
                 next_state.n_backorders[k] += order_quantity_vec[k]
-
+        
         if supplier_index != None:
             assert supplier_index > -1, "Assertion Failed: supplier_index < 0"
         else:

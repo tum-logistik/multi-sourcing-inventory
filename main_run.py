@@ -17,19 +17,40 @@ if __name__ == '__main__':
     #     on_times = np.array([1, 1, 2]), 
     #     off_times = np.array([0.3, 1, 0.2]))
     
-    sourcingEnv = SourcingEnv(
+    filename = "output/msource_value_dic_06-23-2022-13-03-05.pkl"
+
+    with open(filename, 'rb') as f:
+        output_obj = pkl.load(f)
+
+    value_dic = output_obj["state_value_dic"]
+    model_params = output_obj["model_params"]
+    sourcingEnv = output_obj["mdp_env"]
+
+    sourcingEnv2 = SourcingEnv(
         lambda_arrival = LAMBDA, # or 10
-        procurement_cost_vec = np.array([3, 1]),
-        supplier_lead_times_vec = np.array([9, 4]),
-        on_times = np.array([1, 1]), 
-        off_times = np.array([0.3, 1]))
+        procurement_cost_vec = sourcingEnv.procurement_cost_vec,
+        supplier_lead_times_vec = sourcingEnv.supplier_lead_times_vec,
+        on_times = sourcingEnv.on_times, 
+        off_times = sourcingEnv.off_times)
+
+    for i in range(15):
+        action_di = dual_index_policy(sourcingEnv2) if len(sourcingEnv2.action_history_tuple) > 0 else np.zeros(2)
+        sourcingEnv2.step(action_di)
+        print("step di")
+    
+
+
+    mc_avg_costs = mc_with_policy(sourcingEnv2,
+        periods = 30,
+        nested_mc_iters = 100,
+        big_s = model_params['policy_params']['big_s'],
+        small_s = model_params['policy_params']['small_s'],
+        h_cost = model_params['policy_params']['h_cost'],
+        b_penalty = model_params['policy_params']['b_penalty'],
+        policy_callback = dual_index_policy)
     
     # Testing dual index policy
 
-    for i in range(15):
-        if len(sourcingEnv.action_history_tuple) > 0:
-            tmark_exp, tmark_reg = dual_index_policy(sourcingEnv)
-        sourcingEnv.step(np.array([np.random.randint(0,4), i]))
     
 
 

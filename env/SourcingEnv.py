@@ -69,7 +69,7 @@ class SourcingEnv():
     def get_time_mark(self, data, ei):
         # assert len(self.supplier_lead_times_vec) == 2, "returning time window for dual index only"
         times = [x[0] for x in data]
-        max_time = np.max(times)
+        max_time = np.max(times) if len(times) > 0 else 0
         return np.clip(max_time - self.supplier_lead_times_vec[ei], 0, np.Inf)
 
     # order_quantity_vec is action (tau)
@@ -218,7 +218,8 @@ class SourcingEnv():
             event = Event.NO_EVENT # No state transition
             supplier_index = None
         
-        if self.tracking_flag:
+        if hasattr(self, 'tracking_flag'):
+        # if self.tracking_flag:
             self.action_history_tuple = self.append_time_tuple(self.action_history_tuple, [event_probs[i], order_quantity_vec])
 
         # Assume when supplier is unavailable, no addition to backlog.

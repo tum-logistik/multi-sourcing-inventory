@@ -20,10 +20,21 @@ if __name__ == '__main__':
     sourcingEnv = SourcingEnv(
         lambda_arrival = LAMBDA, # or 10
         procurement_cost_vec = np.array([3, 1]),
-        supplier_lead_times_vec = np.array([0.8, 0.5]),
+        supplier_lead_times_vec = np.array([9, 4]),
         on_times = np.array([1, 1]), 
         off_times = np.array([0.3, 1]))
     
+    # Testing dual index policy
+
+    for i in range(15):
+        if len(sourcingEnv.action_history_tuple) > 0:
+            tmark_exp, tmark_reg = dual_index_policy(sourcingEnv)
+        sourcingEnv.step(np.array([np.random.randint(0,4), i]))
+    
+
+
+
+
     filename = "output/msource_value_dic_06-21-2022-16-24-05.pkl"
 
     with open(filename, 'rb') as f:

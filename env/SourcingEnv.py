@@ -12,7 +12,8 @@ class SourcingEnv():
         procurement_cost_vec = np.array([2, 1.7]), 
         supplier_lead_times_vec = np.array([0.5, 0.75]), 
         on_times = np.array([3, 1]), 
-        off_times = np.array([0.3, 1])):
+        off_times = np.array([0.3, 1]),
+        tracking_flag = True):
         
         invert_np = lambda x: 1/x
 
@@ -26,9 +27,15 @@ class SourcingEnv():
         self.n_suppliers = len(procurement_cost_vec)
         _ = self.reset()
 
-        # Dual indexing variables
-        self.action_history_tuple = []
-        self.demand_history_tuple = []
+        # TODO: Set expedited supplier index.
+        self.tracking_flag = tracking_flag
+        if self.tracking_flag:
+            self.exp_ind = np.argmin(self.supplier_lead_times_vec)
+            self.reg_ind = np.argmax(self.supplier_lead_times_vec)
+            # Dual indexing variables
+            self.action_history_tuple = []
+            self.demand_history_tuple = []
+
 
         self.mu_lt_rate = invert_np(self.supplier_lead_times_vec)
         self.mu_on_times = invert_np(self.on_times)
@@ -58,6 +65,12 @@ class SourcingEnv():
             return tuple_list + [time_n_action]
         
         return 0
+    
+    def get_time_mark(self, data, ei):
+        # assert len(self.supplier_lead_times_vec) == 2, "returning time window for dual index only"
+        times = [x[0] for x in data]
+        max_time = np.max(times)
+        return np.clip(max_time - self.supplier_lead_times_vec[ei], 0, np.Inf)
 
     # order_quantity_vec is action (tau)
     def compute_event_arrival_time(self, order_quantity_vec, 
@@ -205,8 +218,9 @@ class SourcingEnv():
             event = Event.NO_EVENT # No state transition
             supplier_index = None
         
-        self.action_history_tuple = self.append_time_tuple(self.action_history_tuple, [event_probs[i], order_quantity_vec])
-        
+        if self.tracking_flag:
+            self.action_history_tuple = self.append_time_tuple(self.action_history_tuple, [event_probs[i], order_quantity_vec])
+
         # Assume when supplier is unavailable, no addition to backlog.
         for k in range(self.n_suppliers):
             if self.current_state.flag_on_off[k] == 1:

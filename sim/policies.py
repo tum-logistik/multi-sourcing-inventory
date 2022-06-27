@@ -47,7 +47,30 @@ def ss_policy_fastest_supp_backlog(sourcingEnv, small_s = SMALL_S, big_s = BIG_S
     
     return policy_action
 
+
+# implement dual index policy
+def dual_index_policy(sourcingEnv):
+    assert sourcingEnv.tracking_flag, "Assertion: Tracking feature must be on for dual index policy"
+
+    tmark_exp = sourcingEnv.get_time_mark(sourcingEnv.action_history_tuple, sourcingEnv.exp_ind)
+    tmark_reg = sourcingEnv.get_time_mark(sourcingEnv.action_history_tuple, sourcingEnv.reg_ind)
+
+    # Demand in the expedited range
+    # TODO: Create time slicer filter
+    demand_exp_range = np.array([x for x in sourcingEnv.demand_history_tuple if x[0] > tmark_exp])
+
+    cum_demand_exp_range = np.sum(demand_exp_range, axis=0)[1]
+
+    # Overshoot: defined as number of regular orders placed between n-le and n-lr
+    overshoot_range = np.array([x for x in sourcingEnv.action_history_tuple if tmark_reg < x[0] < tmark_exp])
+
+    action_history_ov_range = np.array([x[1] for x in overshoot_range])
+
+    reg_orders_ov_range = action_history_ov_range[:, sourcingEnv.reg_ind] if len(action_history_ov_range) > 0 else np.array([])
+    cum_reg_orders_ov_range = np.sum(reg_orders_ov_range)
+
+    return tmark_exp, tmark_reg
+
+
 # implement single supplier newsvendor,
 # implement kiesmueller heuristic,
-# implement dual index policy
-

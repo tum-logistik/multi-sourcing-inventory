@@ -1,5 +1,4 @@
 import numpy as np
-from pyrsistent import b
 from common.variables import *
 from scipy.stats import poisson
 from sim.sim_functions import *

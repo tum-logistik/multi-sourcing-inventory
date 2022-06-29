@@ -54,9 +54,9 @@ def ss_policy_fastest_supp_backlog(sourcingEnv, small_s = SMALL_S, big_s = BIG_S
 def dual_index_policy(sourcingEnv, 
     h_cost = H_COST, 
     b_penalty = B_PENALTY,
-    big_s = None,
-    small_s = None,
-    delta_cand_range = 30):
+    big_s = BIG_S,
+    small_s = SMALL_S,
+    delta_cand_range = 40):
 
     assert sourcingEnv.tracking_flag, "Assertion: Tracking feature must be on for dual index policy"
 
@@ -85,41 +85,70 @@ def dual_index_policy(sourcingEnv,
     zr_opt = 0
     delta_opt = 0
     ord_vec_opt = np.zeros(len(sourcingEnv.supplier_lead_times_vec))
-    for del_cand in range(delta_cand_range):
-        x_cand = cum_demand_exp_range - del_cand + cum_reg_orders_ov_range
-        ze_raw = x_search(x_cand, cf, sourcingEnv.lambda_arrival)
-        ze = np.clip(ze_raw, 0, np.Inf)
-        zr = np.clip(ze + del_cand, 0, np.Inf)
-        
-        ord_vec = np.zeros(len(sourcingEnv.supplier_lead_times_vec))
-        ord_vec[sourcingEnv.reg_ind] = np.clip(zr - cum_reg_orders_ov_range, 0, np.Inf)
-        ord_vec[sourcingEnv.exp_ind] = np.clip(ze - cum_exp_orders_ov_range, 0, np.Inf)
+    gap = np.Inf
 
-        delta_cost = cost_calc_expected_di(sourcingEnv, ord_vec)
-        if delta_cost < min_cost:
-            min_cost = delta_cost
-            ze_opt = ze
-            zr_opt = zr
-            delta_opt = del_cand
-            ord_vec_opt = ord_vec
+    for del_cand in range(-delta_cand_range, delta_cand_range):
+        
+        adj_val = cum_demand_exp_range - del_cand + cum_reg_orders_ov_range
+        # ze, gap = inv_poisson(cf, sourcingEnv.lambda_arrival)
+        perc_cand = (1 - poisson.cdf(adj_val, sourcingEnv.lambda_arrival)) / cf
+
+        ze_cand, gap = inv_poisson(perc_cand, sourcingEnv.lambda_arrival)
+
+        if np.abs(perc_cand - cf) < gap:
+            gap = np.abs(perc_cand - cf)
+            ze = np.clip(adj_val, 0, big_s)
+
+            zr = np.clip(ze + del_cand, 0, big_s) 
+
+            ord_vec = np.zeros(len(sourcingEnv.supplier_lead_times_vec))
+            ord_vec[sourcingEnv.reg_ind] = np.clip(zr - sourcingEnv.current_state.s, 0, np.Inf)
+            ord_vec[sourcingEnv.exp_ind] = np.clip(ze - sourcingEnv.current_state.s, 0, np.Inf)
+
+            delta_cost = cost_calc_expected_di(sourcingEnv, ord_vec)
+            if delta_cost < min_cost:
+                min_cost = delta_cost
+                ze_opt = ze
+                zr_opt = zr
+                delta_opt = del_cand
+                ord_vec_opt = ord_vec
     
     # print("Opt vec: " + str(ord_vec_opt))
     # Safety cap
-    if sourcingEnv.current_state.s >= big_s:
-        return np.array([0, 0])
-    if sourcingEnv.current_state.s <= small_s:
-        or_vec = np.array([0, 0])
-        or_vec[sourcingEnv.exp_ind] = small_s - sourcingEnv.current_state.s
-        return or_vec
+    # if sourcingEnv.current_state.s >= big_s:
+    #     return np.array([0, 0])
+    # if sourcingEnv.current_state.s <= small_s:
+    #     or_vec = np.array([0, 0])
+    #     or_vec[sourcingEnv.exp_ind] = small_s - sourcingEnv.current_state.s
+    #     return or_vec
     
     return ord_vec_opt
 
-def g_delta(delta, demand, ov, lambda_val):
-    x = demand - delta + ov
-    return poisson.cdf(x, lambda_val)
 
+def inv_poisson(perc, lambda_arrival, x_lim = 100, delt = 0):
+    gap = np.Inf
+    x_opt = 0
+    for x in range(x_lim):
+        perc_cand = poisson.cdf(x + delt, lambda_arrival)
+        if np.abs(perc - perc_cand) < gap:
+            gap = np.abs(perc - perc_cand)
+            x_opt = x
+    
+    return x_opt, gap
 
-def x_search(x_cand, perc_cdf, lambda_arrival, xrng = 5):
+def x_find(dem_ov, perc_cdf, lambda_arrival, xrng = 10):
+    p_left = poisson.cdf(dem_ov, lambda_arrival)
+
+    gap = np.Inf
+    for i in range(-xrng, xrng):
+        x_cand = dem_ov + i
+        p_right = poisson.cdf(x_cand, lambda_arrival)
+        if np.abs(p_right - p_left) < gap and p_right >= p_left:
+            gap = np.abs(p_right - p_left)
+            x = x_cand
+    return x
+
+def x_search(x_cand, perc_cdf, lambda_arrival, xrng = 10):
     delta = np.Inf
     x = 0
     for i in range(-xrng, xrng):

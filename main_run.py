@@ -17,13 +17,10 @@ if __name__ == '__main__':
     #     on_times = np.array([1, 1, 2]), 
     #     off_times = np.array([0.3, 1, 0.2]))
     
-    sourcingEnv = SourcingEnv(
-        lambda_arrival = LAMBDA, # or 10
-        procurement_cost_vec = np.array([3, 1]),
-        supplier_lead_times_vec = np.array([0.8, 0.5]),
-        on_times = np.array([1, 1]), 
-        off_times = np.array([0.3, 1]))
+    sourcingEnv = SourcingEnv()
     
+    pp = PROCUREMENT_COST_VEC
+
     filename = "output/msource_value_dic_06-21-2022-16-24-05.pkl"
 
     with open(filename, 'rb') as f:

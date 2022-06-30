@@ -1,5 +1,6 @@
 import yaml
 import platform
+import numpy as np
 
 config_path = "config/config_file.yaml" if "larkin" in platform.node() else "workspace/mount/multi-sourcing-inventory/config/config_file.yaml"
 
@@ -30,6 +31,11 @@ LAMBDA = cfg['mdp_env_params']['lambda']
 MAX_INVEN = cfg['mdp_env_params']['max_inven']
 ACTION_SIZE = cfg['mdp_env_params']['action_size']
 DISCOUNT_FAC = cfg['mdp_env_params']['discount_fac']
+
+PROCUREMENT_COST_VEC = np.array(cfg['mdp_env_params']['procurement_cost_vec'])
+SUPPLIER_LEAD_TIMES_VEC = np.array(cfg['mdp_env_params']['supplier_lead_times_vec'])
+ON_TIMES = np.array(cfg['mdp_env_params']['on_times'])
+OFF_TIMES = np.array([np.Inf, np.Inf]) if cfg['mdp_env_params']['off_times'] == "no_disrup" else np.array(cfg['mdp_env_params']['off_times'])
 
 # Evaluation Params
 SAFE_FACTOR = cfg['eval_params']['safe_factor'] if 'safe_factor' in cfg['eval_params'] else 1.0

@@ -27,9 +27,9 @@ if __name__ == '__main__':
     sourcingEnv = SourcingEnv(
         lambda_arrival = LAMBDA, # or 10
         procurement_cost_vec = np.array([3, 1]),
-        supplier_lead_times_vec = np.array([0.8, 0.5]),
+        supplier_lead_times_vec = np.array([0.5, 0.8]),
         on_times = np.array([1, 1]), 
-        off_times = np.array([0.3, 1]))
+        off_times = np.array([np.Inf, np.Inf]))
 
     s_initial = MState(stock_level = 0, 
         n_suppliers = N_SUPPLIERS, 
@@ -43,7 +43,7 @@ if __name__ == '__main__':
     now = datetime.now()
     date_time = now.strftime("%m-%d-%Y-%H-%M-%S")
 
-    write_path = 'output/msource_value_dic_{dt}.pkl'.format(dt = str(date_time)) if 'larkin' in platform.node() else 'workspace/mount/multi-sourcing-inventory/output/msource_value_dic_{dt}.pkl'.format(dt = str(date_time))
+    write_path = 'output/msource_value_dic_{dt}.pkl'.format(dt = str(date_time)) if 'larkin' in platform.node() else 'output/msource_value_dic_{dt}.pkl'.format(dt = str(date_time))
     
     with open(write_path, 'wb') as handle:
         pickle.dump(output_dic, handle, protocol=pickle.HIGHEST_PROTOCOL)

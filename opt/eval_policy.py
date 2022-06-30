@@ -6,6 +6,8 @@ from sim.sim_functions import *
 import time
 from common.variables import *
 from opt.mc_sim import *
+from tqdm import tqdm
+
 
 def eval_policy_from_value_dic(sourcingEnv, value_dic, max_steps,
     max_stock = BIG_S,
@@ -52,16 +54,18 @@ def eval_policy_from_value_dic(sourcingEnv, value_dic, max_steps,
                     potential_next_state.flag_on_off[supplier_index] = 0
                     potential_next_state.n_backorders += pa
                 
-                potential_immediate_cost = -cost_calc(potential_next_state, h_cost = h_cost, b_penalty = b_penalty)
+                potential_next_cost = -cost_calc(potential_next_state, h_cost = h_cost, b_penalty = b_penalty)
                 state_key = potential_next_state.get_repr_key()
 
-                reward_contrib += event_probs[e] * potential_immediate_cost
+                potential_immediate_cost = -np.sum(np.multiply(sourcingEnv.procurement_cost_vec, pa))
+
+                reward_contrib += event_probs[e] * (potential_next_cost + potential_immediate_cost)
                 if state_key in value_dic and value_dic[state_key][1] > n_visit_lim:
                         potential_state_value = value_dic[state_key][0]
                 else:
                     sourcingEnvCopy = copy.deepcopy(sourcingEnv)
                     sourcingEnvCopy.current_state = potential_next_state
-                    eval_costs = mc_with_ss_policy(sourcingEnvCopy,
+                    eval_costs = mc_with_policy(sourcingEnvCopy,
                         periods = sub_eval_periods,
                         nested_mc_iters = sub_nested_mc_iter)
                     potential_state_value = np.mean(eval_costs)
@@ -101,10 +105,10 @@ def mc_eval_policy_perf(sourcingEnv, value_dic,
     policy_callback = eval_policy_from_value_dic):
 
     costs = []
-    for mc in range(mc_iters):
+    for mc in tqdm(range(mc_iters)):
         cost = policy_callback(sourcingEnv, value_dic, max_steps, discount_fac = discount_fac, h_cost = h_cost, b_penalty = b_penalty)
         costs.append(cost)
-        print("MC eval iter: " + str(mc))
+        # print("MC eval iter: " + str(mc))
     
     return costs
 

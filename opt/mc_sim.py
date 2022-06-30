@@ -6,14 +6,16 @@ import time
 from common.variables import *
 from datetime import datetime
 import pickle
+from tqdm import tqdm
 
-def mc_episode_with_ss_policy(sourcingEnv, 
+
+def mc_episode_with_policy(sourcingEnv, 
     h_cost = H_COST, 
     b_penalty = B_PENALTY, 
     small_s = SMALL_S, 
     big_s = BIG_S, 
     periods = PERIODS, 
-    ss_policy = ss_policy_fastest_supp_backlog):
+    policy = ss_policy_fastest_supp_backlog):
 
     sourcingEnv.reset()
 
@@ -21,37 +23,41 @@ def mc_episode_with_ss_policy(sourcingEnv,
     total_costs = [cost]
     for i in range(periods):
         
-        policy_action = ss_policy(sourcingEnv, small_s = small_s, big_s = big_s)
+        policy_action = policy(sourcingEnv, small_s = small_s, big_s = big_s)
         next_state, event, event_index, probs, supplier_index = sourcingEnv.step(policy_action)
         cost = cost_calc(next_state, h_cost = h_cost, b_penalty = b_penalty)
-        total_costs.append(cost)
+        total_procurement_cost = np.sum(np.multiply(policy_action, sourcingEnv.procurement_cost_vec))
+        total_cost = cost + total_procurement_cost
+        total_costs.append(total_cost)
 
     return np.sum(total_costs), np.sum(total_costs)/periods
 
-def mc_with_ss_policy(sourcingEnv, 
+def mc_with_policy(sourcingEnv, 
     start_state = False,
     h_cost = H_COST, 
     b_penalty = B_PENALTY, 
     small_s = SMALL_S, 
     big_s = BIG_S, 
     periods = PERIODS, 
-    ss_policy_callback = ss_policy_fastest_supp_backlog, 
-    nested_mc_iters = NESTED_MC_ITERS):
+    policy_callback = ss_policy_fastest_supp_backlog, 
+    nested_mc_iters = NESTED_MC_ITERS,
+    use_tqdm = False):
     
     mc_avg_costs = []
 
-    for i in range(nested_mc_iters):
+    for i in tqdm(range(nested_mc_iters)) if use_tqdm else range(nested_mc_iters):
         if start_state != False:
             sourcingEnv.current_state = start_state
 
         start_time = time.time()
-        _, avg_cost = mc_episode_with_ss_policy(sourcingEnv, h_cost = h_cost, b_penalty = b_penalty, small_s = small_s, big_s = big_s, periods = periods, ss_policy = ss_policy_callback)
+        _, avg_cost = mc_episode_with_policy(sourcingEnv, h_cost = h_cost, b_penalty = b_penalty, small_s = small_s, big_s = big_s, periods = periods, policy = policy_callback)
         mc_avg_costs.append(avg_cost)
         run_time = time.time() - start_time
         # if i % 100 == 0:
         #     print("time per 100 iter: " + str(run_time))
     
     return mc_avg_costs
+
 
 def approx_value_iteration(sourcingEnv, initial_state, 
     max_steps = MAX_STEPS, 
@@ -70,7 +76,7 @@ def approx_value_iteration(sourcingEnv, initial_state,
     now = datetime.now()
     date_time = now.strftime("%m-%d-%Y-%H-%M-%S")
 
-    debug_write_path = 'output/debug_output_{dt}.txt'.format(dt = str(date_time)) if 'larkin' in platform.node() else 'workspace/mount/multi-sourcing-inventory/output/debug_output_{dt}.txt'.format(dt = str(date_time))
+    debug_write_path = 'output/debug_output_{dt}.txt'.format(dt = str(date_time)) if 'larkin' in platform.node() else 'output/debug_output_{dt}.txt'.format(dt = str(date_time))
     with open(debug_write_path, 'a') as f:
         f.write("####### DEBUG OUTPUT ####### \n")
         f.close()
@@ -93,7 +99,7 @@ def approx_value_iteration(sourcingEnv, initial_state,
             # We know the transition probabilities
             value_array = np.zeros(len(possible_joint_actions))
             for pa in range(len(possible_joint_actions)):
-                value = 0
+                future_value = 0
                 event_probs = sourcingEnv.get_event_probs(possible_joint_actions[pa])
                 for i in range(len(event_probs)):
                     if event_probs[i] > 0:
@@ -110,7 +116,7 @@ def approx_value_iteration(sourcingEnv, initial_state,
                             state_value_dic[state_key]= (avg_value_estimate, state_value_dic[state_key][1] + 1)
                         else:
                             # there is a explore_eps chance of state-value re-estimation, and value update
-                            value_estimates = mc_with_ss_policy(sourcingEnvCopy, potential_state)
+                            value_estimates = mc_with_policy(sourcingEnvCopy, potential_state)
                             avg_value_estimate = -np.mean(value_estimates)
 
                             # value update on the MC explored states
@@ -128,9 +134,10 @@ def approx_value_iteration(sourcingEnv, initial_state,
                         # else:
                         #     avg_value_estimate = np.mean(list(state_value_dic.values()))
 
-                        value += reward_contribution + event_probs[i] * avg_value_estimate
-                
-                value_array[pa] = value
+                        future_value += reward_contribution + event_probs[i] * avg_value_estimate
+                    action_reward = -np.sum(np.multiply(sourcingEnv.procurement_cost_vec, pa))
+
+                value_array[pa] = action_reward + future_value
                 
             # decide transition
             trans_ac_type = "step max V"
@@ -182,7 +189,7 @@ def approx_value_iteration(sourcingEnv, initial_state,
             print(debug_count_msg)
 
         # model save every save_interval intervals
-        write_path = 'output/msource_value_dic_{dt}_interval.pkl'.format(dt = str(model_start_date_time)) if 'larkin' in platform.node() else 'workspace/mount/multi-sourcing-inventory/output/msource_value_dic_{dt}.pkl'.format(dt = str(model_start_date_time))
+        write_path = 'output/msource_value_dic_{dt}_interval.pkl'.format(dt = str(model_start_date_time)) if 'larkin' in platform.node() else 'output/msource_value_dic_{dt}.pkl'.format(dt = str(model_start_date_time))
         output_obj = {"state_value_dic": state_value_dic, "model_params": model_args_dic, "mdp_env": sourcingEnv}
 
         with open(write_path, 'wb') as handle:
@@ -207,7 +214,7 @@ def find_opt_ss_policy_via_mc(sourcingEnv,
 
     for small_s in range(0, max_S):
         for big_s in range(small_s+1, max_S):
-            mc_avg_costs = mc_with_ss_policy(sourcingEnv, 
+            mc_avg_costs = mc_with_policy(sourcingEnv, 
                 periods = periods,
                 nested_mc_iters = nested_mc_iters,
                 big_s = big_s,

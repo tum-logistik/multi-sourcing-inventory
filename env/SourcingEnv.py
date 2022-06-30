@@ -27,7 +27,6 @@ class SourcingEnv():
         self.n_suppliers = len(procurement_cost_vec)
         _ = self.reset()
 
-        # TODO: Set expedited supplier index.
         self.tracking_flag = tracking_flag
         if self.tracking_flag:
             self.exp_ind = np.argmin(self.supplier_lead_times_vec)

@@ -41,7 +41,7 @@ if __name__ == '__main__':
         small_s = model_params['policy_params']['small_s'],
         h_cost = model_params['policy_params']['h_cost'],
         b_penalty = model_params['policy_params']['b_penalty'],
-        policy_callback=dual_index_policy,
+        policy_callback = dual_index_policy,
         use_tqdm = True)
 
     for i in range(15):

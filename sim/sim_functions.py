@@ -7,9 +7,7 @@ def cost_calc(state, h_cost = H_COST, b_penalty = B_PENALTY):
     cost = state.s * h_cost if state.s > 0 else np.abs(state.s * b_penalty)
     return cost
 
-# TODO: Create an expected cost function
 def cost_calc_expected_di(sourcingEnv, order_quantity_vec, h_cost = H_COST, b_penalty = B_PENALTY):
-    # TODO: Incorporate discount factor
 
     event_probs = sourcingEnv.get_event_probs(order_quantity_vec)
     current_cost = cost_calc(sourcingEnv.current_state)

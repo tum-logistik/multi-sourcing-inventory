@@ -2,6 +2,7 @@ import numpy as np
 from common.variables import *
 from scipy.stats import poisson
 from sim.sim_functions import *
+import yaml
 
 def ss_policy(inventory_level, small_s, big_s):
 
@@ -56,8 +57,8 @@ def dual_index_policy(sourcingEnv,
     b_penalty = B_PENALTY,
     big_s = BIG_S,
     small_s = SMALL_S,
-    delta_cand_range = 20,
-    safety_factor_di = 8):
+    delta_cand_range = DI_DEL_RNG,
+    safety_factor_di = DI_SF_FAC):
 
     assert sourcingEnv.tracking_flag, "Assertion: Tracking feature must be on for dual index policy"
 

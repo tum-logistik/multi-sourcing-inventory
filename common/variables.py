@@ -32,9 +32,15 @@ ACTION_SIZE = cfg['mdp_env_params']['action_size']
 DISCOUNT_FAC = cfg['mdp_env_params']['discount_fac']
 
 # Evaluation Params
-SAFE_FACTOR = cfg['eval_params']['safe_factor'] if 'safe_factor' in cfg['eval_params'] else 1.0
-N_VISIT_LIM = cfg['eval_params']['n_visit_limit'] if 'safe_factor' in cfg['eval_params'] else 2
-SUB_EVAL_PERIODS = cfg['eval_params']['sub_eval_periods'] if 'sub_eval_periods' in cfg['eval_params'] else 1.0
-SUB_NESTED_MC_ITER = cfg['eval_params']['sub_nested_mc_iter'] if 'sub_nested_mc_iter' in cfg['eval_params'] else 1.0
+SAFE_FACTOR = cfg['eval_params']['safe_factor'] if 'eval_params' in cfg and 'safe_factor' in cfg['eval_params'] else 1.0
+N_VISIT_LIM = cfg['eval_params']['n_visit_limit'] if 'eval_params' in cfg and 'safe_factor' in cfg['eval_params'] else 2
+SUB_EVAL_PERIODS = cfg['eval_params']['sub_eval_periods'] if 'eval_params' in cfg and 'sub_eval_periods' in cfg['eval_params'] else 1.0
+SUB_NESTED_MC_ITER = cfg['eval_params']['sub_nested_mc_iter'] if 'eval_params' in cfg and 'sub_nested_mc_iter' in cfg['eval_params'] else 1.0
 
+# Dual Index
+DI_DEL_RNG = cfg['dual_index']['delta_cand_range'] if 'dual_index' in cfg and 'delta_cand_range' in cfg['dual_index'] else 20
+DI_SF_FAC = cfg['dual_index']['di_safety_factor'] if 'dual_index' in cfg and 'di_safety_factor' in cfg['dual_index'] else 8
+
+##
 MODEL_ARGS_DIC = cfg
+

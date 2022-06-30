@@ -70,7 +70,7 @@ def approx_value_iteration(sourcingEnv, initial_state,
     now = datetime.now()
     date_time = now.strftime("%m-%d-%Y-%H-%M-%S")
 
-    debug_write_path = 'output/debug_output_{dt}.txt'.format(dt = str(date_time)) if 'larkin' in platform.node() else 'workspace/mount/multi-sourcing-inventory/output/debug_output_{dt}.txt'.format(dt = str(date_time))
+    debug_write_path = 'output/debug_output_{dt}.txt'.format(dt = str(date_time)) if 'larkin' in platform.node() else 'output/debug_output_{dt}.txt'.format(dt = str(date_time))
     with open(debug_write_path, 'a') as f:
         f.write("####### DEBUG OUTPUT ####### \n")
         f.close()
@@ -182,7 +182,7 @@ def approx_value_iteration(sourcingEnv, initial_state,
             print(debug_count_msg)
 
         # model save every save_interval intervals
-        write_path = 'output/msource_value_dic_{dt}_interval.pkl'.format(dt = str(model_start_date_time)) if 'larkin' in platform.node() else 'workspace/mount/multi-sourcing-inventory/output/msource_value_dic_{dt}.pkl'.format(dt = str(model_start_date_time))
+        write_path = 'output/msource_value_dic_{dt}_interval.pkl'.format(dt = str(model_start_date_time)) if 'larkin' in platform.node() else 'output/msource_value_dic_{dt}.pkl'.format(dt = str(model_start_date_time))
         output_obj = {"state_value_dic": state_value_dic, "model_params": model_args_dic, "mdp_env": sourcingEnv}
 
         with open(write_path, 'wb') as handle:

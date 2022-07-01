@@ -32,10 +32,26 @@ if __name__ == '__main__':
         n_suppliers = N_SUPPLIERS, 
         n_backorders = np.array([0, 0]), 
         flag_on_off = np.array([1, 1]))
-        
-    output_dic = approx_value_iteration(sourcingEnv, s_initial)
+
+    # finding sS* policy for approx
+
+    print ("Finding sS* policy")
+    best_small_s, best_big_s, best_val = find_opt_ss_policy_via_mc(sourcingEnv,
+        periods = 3,
+        nested_mc_iters = 4,
+        h_cost = H_COST,
+        b_penalty = B_PENALTY,
+        max_S = 3)
+
+    print("sS* policy: " + str((best_small_s, best_big_s, best_val)))
+
+    output_dic = approx_value_iteration(sourcingEnv, s_initial, big_s = best_big_s, small_s = best_small_s)
+
     output_dic['model_params']['git_commit'] = sha
     output_dic['model_params']['branch_name'] = branch_name
+
+    output_dic['model_params']['policy_params']['big_s'] = best_big_s
+    output_dic['model_params']['policy_params']['small_s'] = best_small_s
 
     now = datetime.now()
     date_time = now.strftime("%m-%d-%Y-%H-%M-%S")
@@ -63,6 +79,13 @@ if __name__ == '__main__':
 
     eval_costs_scaled = np.array(eval_costs)/output_dic['model_params']['eval_params']['sub_eval_periods']
     output_dic['adp_cost'] = np.mean(eval_costs_scaled)
+
+    mc_avg_costs_ss_prime = mc_with_policy(sourcingEnv, 
+        big_s = best_big_s,
+        small_s = best_small_s,
+        use_tqdm = False)
+    
+    output_dic['ss_cost'] = np.mean(np.array(mc_avg_costs_ss_prime))
 
     with open(write_path, 'wb') as handle:
         pickle.dump(output_dic, handle, protocol=pickle.HIGHEST_PROTOCOL)

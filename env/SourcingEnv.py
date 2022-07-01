@@ -12,7 +12,8 @@ class SourcingEnv():
         procurement_cost_vec = PROCUREMENT_COST_VEC, 
         supplier_lead_times_vec = SUPPLIER_LEAD_TIMES_VEC, 
         on_times = ON_TIMES, 
-        off_times = OFF_TIMES):
+        off_times = OFF_TIMES,
+        tracking_flag = True):
         
         invert_np = lambda x: 1/x
 

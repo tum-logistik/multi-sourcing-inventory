@@ -7,6 +7,8 @@ import pickle
 from datetime import datetime
 import platform
 import importlib 
+from opt.eval_policy import *
+
 
 if __name__ == '__main__':
     print("#### Running Main Subroutine ####")
@@ -40,6 +42,28 @@ if __name__ == '__main__':
 
     write_path = 'output/msource_value_dic_{dt}.pkl'.format(dt = str(date_time)) if 'larkin' in platform.node() else 'output/msource_value_dic_{dt}.pkl'.format(dt = str(date_time))
     
+    # Evaluate model
+    mc_avg_costs = mc_with_policy(sourcingEnv, 
+        periods = output_dic['model_params']['algo_params']['periods'],
+        nested_mc_iters = output_dic['model_params']['algo_params']['nested_mc_iters'],
+        big_s = output_dic['model_params']['policy_params']['big_s'],
+        small_s = output_dic['model_params']['policy_params']['small_s'],
+        h_cost = output_dic['model_params']['policy_params']['h_cost'],
+        b_penalty = output_dic['model_params']['policy_params']['b_penalty'],
+        policy_callback=dual_index_policy,
+        use_tqdm = True)
+    
+    output_dic['approx_di_cost'] = np.mean(np.array(mc_avg_costs))
+
+    eval_costs = mc_eval_policy_perf(sourcingEnv, output_dic['state_value_dic'], 
+        max_steps = output_dic['model_params']['eval_params']['sub_eval_periods'], 
+        mc_iters = output_dic['model_params']['eval_params']['sub_nested_mc_iter'],
+        h_cost = output_dic['model_params']['policy_params']['h_cost'],
+        b_penalty = output_dic['model_params']['policy_params']['b_penalty'])
+
+    eval_costs_scaled = np.array(eval_costs)/output_dic['model_params']['eval_params']['sub_eval_periods']
+    output_dic['adp_cost'] = np.mean(eval_costs_scaled)
+
     with open(write_path, 'wb') as handle:
         pickle.dump(output_dic, handle, protocol=pickle.HIGHEST_PROTOCOL)
     

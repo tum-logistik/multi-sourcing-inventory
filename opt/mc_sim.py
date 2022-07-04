@@ -69,7 +69,9 @@ def approx_value_iteration(sourcingEnv, initial_state,
     max_inven = MAX_INVEN,
     model_args_dic = MODEL_ARGS_DIC,
     debug_bool = DEBUG_BOOL,
-    learn_rate = FIXED_LEARN_RATE):
+    learn_rate = FIXED_LEARN_RATE,
+    small_s = SMALL_S, 
+    big_s = BIG_S, ):
     # initialize random values.array
     # simulate 5x as a first guess, and use a uniform range
     
@@ -116,7 +118,7 @@ def approx_value_iteration(sourcingEnv, initial_state,
                             state_value_dic[state_key]= (avg_value_estimate, state_value_dic[state_key][1] + 1)
                         else:
                             # there is a explore_eps chance of state-value re-estimation, and value update
-                            value_estimates = mc_with_policy(sourcingEnvCopy, potential_state)
+                            value_estimates = mc_with_policy(sourcingEnvCopy, potential_state, big_s = big_s, small_s = small_s)
                             avg_value_estimate = -np.mean(value_estimates)
 
                             # value update on the MC explored states

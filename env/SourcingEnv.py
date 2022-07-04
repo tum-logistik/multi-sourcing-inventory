@@ -9,10 +9,10 @@ class SourcingEnv():
     def __init__(self, 
         order_quantity = ACTION_SIZE,
         lambda_arrival = LAMBDA,
-        procurement_cost_vec = np.array([2, 1.7]), 
-        supplier_lead_times_vec = np.array([0.5, 0.75]), 
-        on_times = np.array([3, 1]), 
-        off_times = np.array([0.3, 1]),
+        procurement_cost_vec = PROCUREMENT_COST_VEC, 
+        supplier_lead_times_vec = SUPPLIER_LEAD_TIMES_VEC, 
+        on_times = ON_TIMES, 
+        off_times = OFF_TIMES,
         tracking_flag = True):
         
         invert_np = lambda x: 1/x

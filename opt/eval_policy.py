@@ -1,5 +1,4 @@
 import numpy as np
-from pyrsistent import s
 from env.SourcingEnv import *
 from sim.policies import *
 from sim.sim_functions import *

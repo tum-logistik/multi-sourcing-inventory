@@ -21,13 +21,24 @@ if __name__ == '__main__':
     
     pp = PROCUREMENT_COST_VEC
 
-    filename = "output/msource_value_dic_06-21-2022-16-24-05.pkl"
+    filename = "output/msource_value_dic_07-02-2022-06-43-07.pkl"
 
     with open(filename, 'rb') as f:
         output_obj = pkl.load(f)
 
     value_dic = output_obj["state_value_dic"]
     model_params = output_obj["model_params"]
+
+    mc_avg_costs = mc_with_policy(sourcingEnv, 
+        periods = 30,
+        nested_mc_iters = 100,
+        big_s = model_params['policy_params']['big_s'],
+        small_s = model_params['policy_params']['small_s'],
+        h_cost = model_params['policy_params']['h_cost'],
+        b_penalty = model_params['policy_params']['b_penalty'],
+        use_tqdm = True,
+        policy_callback = single_source_orderupto_policy)
+
     
     eval_steps = 50
     mc_eval_iter = 3
@@ -49,7 +60,8 @@ if __name__ == '__main__':
 
         # s S policy with aribtrary s S, and randomly selected vendor
         policy_action = ss_policy_rand_supp(sourcingEnv, small_s = 3, big_s = 15)
-        policy_action = ss_policy_fastest_supp_backlog(sourcingEnv, small_s = 3, big_s = 10)
+        kwargs = {"small_s": 3, "big_s": 10}
+        policy_action = ss_policy_fastest_supp_backlog(sourcingEnv, **kwargs)
         
         next_state, event, event_index, probs, supplier_index = sourcingEnv.step(policy_action)
 

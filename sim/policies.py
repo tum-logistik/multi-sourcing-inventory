@@ -3,6 +3,7 @@ from common.variables import *
 from scipy.stats import poisson
 from sim.sim_functions import *
 import yaml
+import copy
 
 def ss_policy(inventory_level, small_s, big_s):
 
@@ -136,11 +137,66 @@ def single_source_orderupto_policy(sourcingEnv, **kwargs):
     return action_array
 
 
-# implement kiesmueller heuristic,
+# implement kiesmueller heuristic, / COP
+
+
+# Myopic 1 policy, 1 step ahead myopic policy.
+def myopic1_policy(sourcingEnv, **kwargs):
+
+    max_order = MAX_INVEN if "max_order" not in kwargs else kwargs["max_order"]
+
+    possible_joint_actions = get_combo(int(max_order), sourcingEnv.n_suppliers)
+    myopic_order = np.zeros(sourcingEnv.n_suppliers)
+
+    cost = np.Inf
+    for a in possible_joint_actions:
+        cand_cost = cost_calc_expected_di(sourcingEnv, a)
+        if cand_cost < cost:
+            myopic_order = a
+            cost = cand_cost
+    
+    return myopic_order
+
+def myopic1_policy(sourcingEnv, **kwargs):
+
+    max_order = MAX_INVEN if "max_order" not in kwargs else kwargs["max_order"]
+
+    possible_joint_actions = get_combo(int(max_order), sourcingEnv.n_suppliers)
+    myopic_order = np.zeros(sourcingEnv.n_suppliers)
+
+    cost = np.Inf
+    for a in possible_joint_actions:
+        cand_cost = cost_calc_expected_di(sourcingEnv, a)
+        if cand_cost < cost:
+            myopic_order = a
+            cost = cand_cost
+    
+    return myopic_order
+
+def myopic2_policy(sourcingEnv, **kwargs):
+
+    max_order = BIG_S if "max_order" not in kwargs else kwargs["max_order"]
+
+    possible_joint_actions = get_combo(int(max_order), sourcingEnv.n_suppliers)
+    myopic_order = np.zeros(sourcingEnv.n_suppliers)
+
+    cost = np.Inf
+    for a in possible_joint_actions:
+        cand_cost = cost_calc_expected_di(sourcingEnv, a)
+        sourcingEnvGhost = copy.deepcopy(sourcingEnv)
+        sourcingEnvGhost.step(a)
+        for a2 in possible_joint_actions:
+            stage2_cost = cost_calc_expected_di(sourcingEnvGhost, a2)
+            cand_cost += stage2_cost
+        
+        if cand_cost < cost:
+            myopic_order = a
+            cost = cand_cost
+    
+    return myopic_order
 
 
 ### Legacy
-
 # orders up to S items, when inven < s, orders with a uniform random supplier, order amount S - s
 def ss_policy_rand_supp(sourcingEnv, small_s, big_s):
 

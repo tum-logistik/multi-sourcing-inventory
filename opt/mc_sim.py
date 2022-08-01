@@ -10,20 +10,20 @@ from tqdm import tqdm
 
 
 def mc_episode_with_policy(sourcingEnv, 
-    h_cost = H_COST, 
-    b_penalty = B_PENALTY, 
-    small_s = SMALL_S, 
-    big_s = BIG_S, 
-    periods = PERIODS, 
-    policy = ss_policy_fastest_supp_backlog):
+    policy = ss_policy_fastest_supp_backlog, 
+    **kwargs):
 
+    b_penalty = B_PENALTY if "b_penalty" not in kwargs else kwargs["b_penalty"]
+    h_cost = H_COST if "h_cost" not in kwargs else kwargs["h_cost"]
+    periods = PERIODS if "periods" not in kwargs else kwargs["periods"]
+    
     sourcingEnv.reset()
 
     cost = cost_calc(sourcingEnv.current_state, h_cost = h_cost, b_penalty = b_penalty)
     total_costs = [cost]
     for i in range(periods):
         
-        policy_action = policy(sourcingEnv, small_s = small_s, big_s = big_s)
+        policy_action = policy(sourcingEnv, **kwargs)
         next_state, event, event_index, probs, supplier_index = sourcingEnv.step(policy_action)
         cost = cost_calc(next_state, h_cost = h_cost, b_penalty = b_penalty)
         total_procurement_cost = np.sum(np.multiply(policy_action, sourcingEnv.procurement_cost_vec))
@@ -34,14 +34,10 @@ def mc_episode_with_policy(sourcingEnv,
 
 def mc_with_policy(sourcingEnv, 
     start_state = False,
-    h_cost = H_COST, 
-    b_penalty = B_PENALTY, 
-    small_s = SMALL_S, 
-    big_s = BIG_S, 
-    periods = PERIODS, 
     policy_callback = ss_policy_fastest_supp_backlog, 
     nested_mc_iters = NESTED_MC_ITERS,
-    use_tqdm = False):
+    use_tqdm = False,
+    **kwargs):
     
     mc_avg_costs = []
 
@@ -50,7 +46,7 @@ def mc_with_policy(sourcingEnv,
             sourcingEnv.current_state = start_state
 
         start_time = time.time()
-        _, avg_cost = mc_episode_with_policy(sourcingEnv, h_cost = h_cost, b_penalty = b_penalty, small_s = small_s, big_s = big_s, periods = periods, policy = policy_callback)
+        _, avg_cost = mc_episode_with_policy(sourcingEnv, policy = policy_callback, **kwargs)
         mc_avg_costs.append(avg_cost)
         run_time = time.time() - start_time
         # if i % 100 == 0:

@@ -8,23 +8,42 @@ from opt.mc_sim import *
 from tqdm import tqdm
 
 
-def eval_policy_from_value_dic(sourcingEnv, value_dic, max_steps,
-    max_stock = BIG_S,
-    discount_fac = DISCOUNT_FAC,
-    h_cost = H_COST, 
-    b_penalty = B_PENALTY,
-    n_visit_lim = N_VISIT_LIM,
-    default_ss_policy = ss_policy_fastest_supp_backlog,
-    safe_factor = SAFE_FACTOR,
-    sub_eval_periods = SUB_EVAL_PERIODS,
-    sub_nested_mc_iter = SUB_NESTED_MC_ITER):
+def eval_policy_from_value_dic(sourcingEnv, 
+        policy = ss_policy_fastest_supp_backlog, 
+        **kwargs
+    ):
 
+    # value_dic, max_steps,
+    #     sub_nested_mc_iter = SUB_NESTED_MC_ITER
+
+    max_stock = BIG_S if "max_stock" not in kwargs else kwargs["max_stock"]
+    periods = PERIODS if "periods" not in kwargs else kwargs["periods"]
+
+    b_penalty = B_PENALTY if "b_penalty" not in kwargs else kwargs["b_penalty"]
+    h_cost = H_COST if "h_cost" not in kwargs else kwargs["h_cost"]
+    
+    default_ss_policy = ss_policy_fastest_supp_backlog if "default_ss_policy" not in kwargs else kwargs["default_ss_policy"]
+    n_visit_lim = N_VISIT_LIM if "n_visit_lim" not in kwargs else kwargs["n_visit_lim"]
+    discount_fac = DISCOUNT_FAC if "discount_fac" not in kwargs else kwargs["discount_fac"]
+    safe_factor = SAFE_FACTOR if "safe_factor" not in kwargs else kwargs["safe_factor"]
+    sub_eval_periods = SUB_EVAL_PERIODS if "sub_eval_periods" not in kwargs else kwargs["sub_eval_periods"]
+    sub_nested_mc_iter = SUB_NESTED_MC_ITER if "sub_nested_mc_iter" not in kwargs else kwargs["sub_nested_mc_iter"]
+
+    value_dic = None if "value_dic" not in kwargs else kwargs["value_dic"]
+    if value_dic == None:
+        print("Error no value dic supplied!")
+        return False
+    
+    approx_eval = False if "approx_eval" not in kwargs else True
+    
     sourcingEnv.reset()
 
     cost_sum = 0
-    cost_sum += cost_calc(sourcingEnv.current_state, h_cost = h_cost, b_penalty = b_penalty)
-    for m in range(max_steps):
-        possible_joint_actions = get_combo(int(max_stock - sourcingEnv.current_state.s), sourcingEnv.n_suppliers)
+    
+    for m in range(periods):
+        cost_sum += cost_calc(sourcingEnv.current_state, h_cost = h_cost, b_penalty = b_penalty)
+
+        possible_joint_actions = get_combo(int(max_stock - sourcingEnv.current_state.s), sourcingEnv.n_suppliers) if not approx_eval else get_combo_reduction(int(max_stock - sourcingEnv.current_state.s), sourcingEnv.n_suppliers)
         max_q_value = -np.Inf
         best_action = np.zeros(sourcingEnv.n_suppliers) # order nothing is the supposed best action
 
@@ -90,10 +109,11 @@ def eval_policy_from_value_dic(sourcingEnv, value_dic, max_steps,
             best_action = ss_action
         
         sourcingEnv.step(best_action)
-
-        cost_sum += cost_calc(sourcingEnv.current_state, h_cost = h_cost, b_penalty = b_penalty)
-
-    return cost_sum
+        # total_procurement_cost = np.sum(np.multiply(best_action, sourcingEnv.procurement_cost_vec))
+        # cost_sum += total_procurement_cost
+        
+    sourcingEnv.reset()
+    return best_action
 
 def mc_eval_policy_perf(sourcingEnv, value_dic, 
     max_steps = MAX_STEPS, 
@@ -103,11 +123,11 @@ def mc_eval_policy_perf(sourcingEnv, value_dic,
     b_penalty = B_PENALTY,
     policy_callback = eval_policy_from_value_dic):
 
-    costs = []
+    mc_avg_costs = []
     for mc in tqdm(range(mc_iters)):
-        cost = policy_callback(sourcingEnv, value_dic, max_steps, discount_fac = discount_fac, h_cost = h_cost, b_penalty = b_penalty)
-        costs.append(cost)
+        cost, avg_cost = policy_callback(sourcingEnv, value_dic, max_steps, discount_fac = discount_fac, h_cost = h_cost, b_penalty = b_penalty)
+        mc_avg_costs.append(avg_cost)
         # print("MC eval iter: " + str(mc))
     
-    return costs
+    return mc_avg_costs
 

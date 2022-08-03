@@ -17,7 +17,7 @@ def eval_policy_from_value_dic(sourcingEnv,
     #     sub_nested_mc_iter = SUB_NESTED_MC_ITER
 
     max_stock = BIG_S if "max_stock" not in kwargs else kwargs["max_stock"]
-    periods = PERIODS if "periods" not in kwargs else kwargs["periods"]
+    periods = PERIODS if "periods_val_it" not in kwargs else kwargs["periods_val_it"]
 
     b_penalty = B_PENALTY if "b_penalty" not in kwargs else kwargs["b_penalty"]
     h_cost = H_COST if "h_cost" not in kwargs else kwargs["h_cost"]
@@ -36,10 +36,11 @@ def eval_policy_from_value_dic(sourcingEnv,
     
     approx_eval = False if "approx_eval" not in kwargs else True
     
-    sourcingEnv.reset()
+    # sourcingEnv.reset()
 
     cost_sum = 0
     
+    # for m in tqdm(range(periods)):
     for m in range(periods):
         cost_sum += cost_calc(sourcingEnv.current_state, h_cost = h_cost, b_penalty = b_penalty)
 
@@ -108,11 +109,11 @@ def eval_policy_from_value_dic(sourcingEnv,
         else:
             best_action = ss_action
         
-        sourcingEnv.step(best_action)
+        # sourcingEnv.step(best_action)
         # total_procurement_cost = np.sum(np.multiply(best_action, sourcingEnv.procurement_cost_vec))
         # cost_sum += total_procurement_cost
         
-    sourcingEnv.reset()
+    # sourcingEnv.reset()
     return best_action
 
 def mc_eval_policy_perf(sourcingEnv, value_dic, 

@@ -31,7 +31,9 @@ def mc_episode_with_policy(sourcingEnv,
         total_cost = cost + total_procurement_cost
         total_costs.append(total_cost)
 
-    return np.sum(total_costs), np.sum(total_costs)/periods
+    avg_cost_per_period = np.mean(total_costs)
+
+    return np.sum(total_costs), avg_cost_per_period
 
 def mc_with_policy(sourcingEnv, 
     start_state = False,

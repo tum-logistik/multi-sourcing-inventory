@@ -31,12 +31,11 @@ with open(filename, 'rb') as f:
         n_suppliers = N_SUPPLIERS, 
         n_backorders = np.array([0, 0]), 
         flag_on_off = np.array([1, 1]))
-    
-    
 
     kwargs = {
         "value_dic": value_dic, 
-        "periods": 2, 
+        "periods": 20, 
+        "periods_val_it": 2,
         "nested_mc_iters": 2,
         "max_stock": BIG_S,
         "discount_fac": DISCOUNT_FAC,
@@ -47,10 +46,12 @@ with open(filename, 'rb') as f:
         "safe_factor": SAFE_FACTOR,
         "sub_eval_periods": SUB_EVAL_PERIODS,
         "sub_nested_mc_iter": SUB_NESTED_MC_ITER,
+        "max_stock": 2,
         "approx_eval": True
     }
 
-    mc_avg_costs = mc_with_policy(sourcingEnv2, start_state = s_custom, 
+    mc_avg_costs = mc_with_policy(sourcingEnv2, 
+        start_state = s_custom, 
         use_tqdm = True,
         policy_callback = eval_policy_from_value_dic,
         **kwargs)

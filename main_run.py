@@ -5,7 +5,6 @@ import numpy as np
 from opt.mc_sim import *
 from opt.eval_policy import *
 import pickle as pkl
-import pickle as pkl
 from opt.eval_policy import *
 
 if __name__ == '__main__':
@@ -26,6 +25,9 @@ with open(filename, 'rb') as f:
         supplier_lead_times_vec = np.array(model_params['mdp_env_params']['supplier_lead_times_vec']),
         on_times = np.array([1, 1]), 
         off_times = np.array([np.Inf, np.Inf]))
+    
+    cost = cost_calc(sourcingEnv2.current_state, h_cost = 4, b_penalty = 6)
+    print(str(sourcingEnv2.current_state) + " cost: " + str(cost))
 
     s_custom = MState(stock_level = 0, 
         n_suppliers = N_SUPPLIERS, 

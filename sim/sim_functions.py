@@ -26,3 +26,9 @@ def cost_calc_expected_di(sourcingEnv, order_quantity_vec, h_cost = H_COST, b_pe
 
 def get_combo(y, n):
     return np.array(np.meshgrid(*[range(0, y) for x in range(n)])).T.reshape(-1, n)
+
+def get_combo_reduction(y, n):
+    # an sS constrained search
+    full_combo = np.array(np.meshgrid(*[range(0, y) for x in range(n)])).T.reshape(-1, n)
+    filtered_output = np.array(list(filter(lambda x: 0 in x, list(full_combo))))
+    return filtered_output

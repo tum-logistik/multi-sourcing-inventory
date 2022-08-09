@@ -38,6 +38,14 @@ action_space_tup = [x for x in itertools.product(*([list(range(sourcingEnv.actio
 # action_space_tup = list(itertools.product(range(sourcingEnv.action_size), range(sourcingEnv.n_suppliers))) 
 action_space = [np.array(list(x)) for x in action_space_tup]
 
+for s in poss_states:
+    for i in range(1, len(s)):
+        s[i] = list(s[i])
+
+
+#############
+
+
 m = gp.Model("MDP")
 x = {}
 
@@ -60,6 +68,7 @@ def add_in_additional_constr(change_i_state, a_i, x, m):
         m.addConstr(x[state_rep_str, a_rep] >= 0)
     return m
 
+poss_states_new = copy.deepcopy(poss_states)
 for j_state in poss_states:
     j_state_obj = MState(j_state[0], sourcingEnv.n_suppliers, j_state[1], j_state[2])   
     poss_i_states_tuples = [] # possible prev. states
@@ -70,6 +79,8 @@ for j_state in poss_states:
             i_state_supp[k] = j_state[1][k] - a_i[k]
             change_i_state = MState(j_state[0] + 1, sourcingEnv.n_suppliers, i_state_supp, j_state[2])
             poss_i_states_tuples.append((a_i, change_i_state, event_probs[0])) # Event DEMAND_ARRIVAL
+            
+            poss_states_new.append(change_i_state.get_nested_list_repr())
             m = add_in_additional_constr(change_i_state, a_i, x, m)
             
             i_state_supp = copy.deepcopy(j_state[1])
@@ -77,6 +88,8 @@ for j_state in poss_states:
             change_i_state = MState(j_state[0] - 1, sourcingEnv.n_suppliers, i_state_supp, j_state[2])
             index = sourcingEnv.get_event_index_from_event(Event.SUPPLY_ARRIVAL, k)
             poss_i_states_tuples.append((a_i, change_i_state, event_probs[index])) # Event SUPPLY_ARRIVAL
+            
+            poss_states_new.append(change_i_state.get_nested_list_repr())
             m = add_in_additional_constr(change_i_state, a_i, x, m)
 
             i_state_v = copy.deepcopy(j_state[2])
@@ -86,7 +99,7 @@ for j_state in poss_states:
                 index = sourcingEnv.get_event_index_from_event(Event.SUPPLIER_ON, k)
                 poss_i_states_tuples.append((a_i, change_i_state, event_probs[index])) # Event SUPPLY_ARRIVAL
                 # m = add_in_additional_constr(change_i_state, a_i, x, m)
-
+            
             i_state_v = copy.deepcopy(j_state[2])
             if j_state[2][k] == 0:
                 i_state_v[k] = 1
@@ -97,7 +110,15 @@ for j_state in poss_states:
             
     m.addConstr(sum(x[str(j_state_obj), repr(list(a))] for a in action_space) - sum(pij*x[str(state_i), repr(list(a_i))] for (a_i, state_i, pij) in poss_i_states_tuples) == 0)
 
+poss_states = copy.deepcopy(poss_states_new)
 
+sa_keys = []
+
+for state_i in poss_states:
+    for a in action_space:
+        sa_keys.append((str(MState(state_i[0], sourcingEnv.n_suppliers, np.array(state_i[1]), np.array(state_i[2])) ), repr(list(a))))
+
+m.addConstr(sum(sourcingEnv.compute_event_arrival_time(a)*x[str(MState(state_i[0], sourcingEnv.n_suppliers, state_i[1], state_i[2])), repr(list(a))] for state_i in poss_states for a in action_space) == 1)
 
 # for state in poss_states:
 #     tp = sourcingEnv.compute_trans_prob()

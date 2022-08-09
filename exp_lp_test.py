@@ -54,7 +54,7 @@ for state in poss_states:
         state_rep = MState(state[0], sourcingEnv.n_suppliers, state[1], state[2])
         state_rep_str = str(state_rep)
         a_rep = repr(list(a))
-        cost = cost_calc_expected_di(sourcingEnv, a, custom_state = state_rep)
+        cost = -cost_calc_expected_di(sourcingEnv, a, custom_state = state_rep)
         x[state_rep_str, a_rep] = m.addVar(obj = cost, name='x-'+str(state)+"-"+str(a))
         m.addConstr(x[state_rep_str, a_rep] >= 0)
         
@@ -125,3 +125,12 @@ m.addConstr(sum(sourcingEnv.compute_event_arrival_time(a)*x[str(MState(state_i[0
 #     m.addConstr(sum(x[state, a] for a in action_space) - sum(tp[j][a][i]*x[j,a] for j in poss_states for a in range(sourcingEnv.action_size)) == 0)
 
 # m.addConstr(sum(x[i,a] for i in range(poss_states) for a in range(poss_states)) == 1)
+
+m.optimize()
+
+# Optimal Policy 
+for state in poss_states_new:
+    for a in action_space:
+        guro_var = m.getVarByName('x-' + str(state) +"-" + str(a))
+        if guro_var is not None and guro_var.X > 0:
+            print(guro_var)

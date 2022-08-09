@@ -50,3 +50,5 @@ DI_SF_FAC = cfg['dual_index']['di_safety_factor'] if 'dual_index' in cfg and 'di
 ##
 MODEL_ARGS_DIC = cfg
 
+MAX_INVEN_LP = 5
+BACKORDER_MAX_LP = -3

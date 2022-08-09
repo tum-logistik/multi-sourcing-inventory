@@ -17,6 +17,7 @@ with open(filename, 'rb') as f:
     sourcingEnv = output_obj["mdp_env"]
 
     sourcingEnv = SourcingEnv(
+        order_quantity = ACTION_SIZE,
         lambda_arrival = model_params['mdp_env_params']['lambda'], # or 10
         procurement_cost_vec = np.array(model_params['mdp_env_params']['procurement_cost_vec']),
         supplier_lead_times_vec = np.array(model_params['mdp_env_params']['supplier_lead_times_vec']),
@@ -24,14 +25,17 @@ with open(filename, 'rb') as f:
         off_times = np.array([np.Inf, np.Inf]))
 
 
-state_backorders = list(itertools.product(range(MAX_INVEN - BACKORDER_MAX), range(sourcingEnv.n_suppliers)))
-state_s = list(range(MAX_INVEN - BACKORDER_MAX))
+state_s = list(range(BACKORDER_MAX_LP, MAX_INVEN_LP))
+state_backorders = list(itertools.product(range(MAX_INVEN_LP - BACKORDER_MAX_LP), range(sourcingEnv.n_suppliers)))
 state_onoff = list(itertools.product(range(2), range(sourcingEnv.n_suppliers)))
 
 possible_state_tuples = list(itertools.product(state_s, state_backorders, state_onoff))
 poss_states = [[x[0], np.array(list(x[1])), np.array(list(x[2]))] for x in possible_state_tuples]
 
-action_space_tup = list(itertools.product(range(sourcingEnv.action_size), range(sourcingEnv.n_suppliers))) 
+
+action_space_tup = [x for x in itertools.product(*([list(range(sourcingEnv.action_size))]*sourcingEnv.n_suppliers)) ]
+
+# action_space_tup = list(itertools.product(range(sourcingEnv.action_size), range(sourcingEnv.n_suppliers))) 
 action_space = [np.array(list(x)) for x in action_space_tup]
 
 m = gp.Model("MDP")
@@ -40,11 +44,60 @@ x = {}
 for state in poss_states:
     for a in action_space:
         state_rep = MState(state[0], sourcingEnv.n_suppliers, state[1], state[2])
+        state_rep_str = str(state_rep)
         a_rep = repr(list(a))
         cost = cost_calc_expected_di(sourcingEnv, a, custom_state = state_rep)
-        x[state_rep, a_rep] = m.addVar(obj = cost, name='x-'+str(state)+"-"+str(a))
-        m.addConstr(x[state_rep, a_rep] >= 0)
+        x[state_rep_str, a_rep] = m.addVar(obj = cost, name='x-'+str(state)+"-"+str(a))
+        m.addConstr(x[state_rep_str, a_rep] >= 0)
         
+# need to write a pij function
+# tau = sourcingEnv.compute_event_arrival_time(a)
+
+def add_in_additional_constr(change_i_state, a_i, x, m):
+    if (str(change_i_state), repr(list(a_i))) not in x:
+        cost = cost_calc_expected_di(sourcingEnv, a_i, custom_state = change_i_state)
+        x[str(change_i_state), repr(list(a_i))] = m.addVar(obj = cost, name='x-'+str(state)+"-"+str(a))
+        m.addConstr(x[state_rep_str, a_rep] >= 0)
+    return m
+
+for j_state in poss_states:
+    j_state_obj = MState(j_state[0], sourcingEnv.n_suppliers, j_state[1], j_state[2])   
+    poss_i_states_tuples = [] # possible prev. states
+    for a_i in action_space:
+        event_probs = sourcingEnv.get_event_probs(a_i)
+        for k in range(sourcingEnv.n_suppliers):
+            i_state_supp = copy.deepcopy(j_state[1])
+            i_state_supp[k] = j_state[1][k] - a_i[k]
+            change_i_state = MState(j_state[0] + 1, sourcingEnv.n_suppliers, i_state_supp, j_state[2])
+            poss_i_states_tuples.append((a_i, change_i_state, event_probs[0])) # Event DEMAND_ARRIVAL
+            m = add_in_additional_constr(change_i_state, a_i, x, m)
+            
+            i_state_supp = copy.deepcopy(j_state[1])
+            i_state_supp[k] = j_state[1][k] - a_i[k] + 1
+            change_i_state = MState(j_state[0] - 1, sourcingEnv.n_suppliers, i_state_supp, j_state[2])
+            index = sourcingEnv.get_event_index_from_event(Event.SUPPLY_ARRIVAL, k)
+            poss_i_states_tuples.append((a_i, change_i_state, event_probs[index])) # Event SUPPLY_ARRIVAL
+            m = add_in_additional_constr(change_i_state, a_i, x, m)
+
+            i_state_v = copy.deepcopy(j_state[2])
+            if j_state[2][k] == 1:
+                i_state_v[k] = 0
+                change_i_state = MState(j_state[0], sourcingEnv.n_suppliers, j_state[1], i_state_v)
+                index = sourcingEnv.get_event_index_from_event(Event.SUPPLIER_ON, k)
+                poss_i_states_tuples.append((a_i, change_i_state, event_probs[index])) # Event SUPPLY_ARRIVAL
+                # m = add_in_additional_constr(change_i_state, a_i, x, m)
+
+            i_state_v = copy.deepcopy(j_state[2])
+            if j_state[2][k] == 0:
+                i_state_v[k] = 1
+                change_i_state = MState(j_state[0], sourcingEnv.n_suppliers, j_state[1], i_state_v)
+                index = sourcingEnv.get_event_index_from_event(Event.SUPPLIER_OFF, k)
+                poss_i_states_tuples.append((a_i, change_i_state, event_probs[index])) # Event SUPPLY_ARRIVAL
+                # m = add_in_additional_constr(change_i_state, a_i, x, m)
+            
+    m.addConstr(sum(x[str(j_state_obj), repr(list(a))] for a in action_space) - sum(pij*x[str(state_i), repr(list(a_i))] for (a_i, state_i, pij) in poss_i_states_tuples) == 0)
+
+
 
 # for state in poss_states:
 #     tp = sourcingEnv.compute_trans_prob()

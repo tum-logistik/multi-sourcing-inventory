@@ -8,7 +8,7 @@ import itertools
 
 GRB = gp.GRB
 
-filename = "output/msource_value_dic_08-05-2022-07-30-09.pkl"
+filename = "output/msource_value_dic_08-04-2022-10-37-54.pkl"
 
 with open(filename, 'rb') as f:
     output_obj = pkl.load(f)
@@ -32,7 +32,7 @@ possible_state_tuples = list(itertools.product(state_s, state_backorders, state_
 poss_states = [[x[0], np.array(list(x[1])), np.array(list(x[2]))] for x in possible_state_tuples]
 
 
-action_space_tup = [x for x in itertools.product(*([list(range(sourcingEnv.action_size))]*sourcingEnv.n_suppliers)) ]
+action_space_tup = [x for x in itertools.product(*([list(range(ACTION_SIZE_LP))]*sourcingEnv.n_suppliers)) ]
 
 # action_space_tup = list(itertools.product(range(sourcingEnv.action_size), range(sourcingEnv.n_suppliers))) 
 action_space = [np.array(list(x)) for x in action_space_tup]
@@ -54,7 +54,9 @@ x = {}
 
 def add_in_additional_var(state_obj, action):
     if (state_obj.get_nested_list_repr(), repr(list(action))) not in x:
-        cost = cost_calc_expected_di(sourcingEnv, action, custom_state = state_obj)
+        state_cost = cost_calc(state_obj)
+        action_cost = np.sum(np.multiply(sourcingEnv.procurement_cost_vec, action))
+        cost = state_cost + action_cost
         x[state_obj.get_nested_list_repr(), repr(list(action))] = m.addVar(obj = cost, name='var_x..' + state_obj.get_nested_list_repr() + ".." + str(action), vtype=GRB.CONTINUOUS) # default lower bound of 0, obj = cost
         m.addConstr(x[state_obj.get_nested_list_repr(), repr(list(action))] >= 0.0)
         return True
@@ -127,8 +129,8 @@ for state_i in poss_states:
 
 poss_states_objs = [MState(state[0], sourcingEnv.n_suppliers, state[1], state[2]) for state in poss_states]
 
-for p in poss_states:
-    print(p)
+# for p in poss_states:
+#     print(p)
 
 for s in poss_states_objs:
     for a in action_space:
@@ -143,11 +145,11 @@ m.optimize()
 m.write("model_lp_2source.lp")
 m.printStats()
 m.printAttr('x')
-
+print("all variables")
 # Optimal Policy 
-# for state in poss_states:
-#     for a in action_space:
-#         guro_var = m.getVarByName('x-' + str(state) +"-" + str(a))
-#         if guro_var is not None and guro_var.X > 0:
-#             print(guro_var)
+for state in poss_states:
+    for a in action_space:
+        guro_var = m.getVarByName('var_x..' + repr(state) + ".." + str(a))
+        # if guro_var is not None and guro_var.X > 0:
+        print(guro_var)
 

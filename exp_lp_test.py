@@ -76,9 +76,11 @@ for j_state in poss_states:
     for a_i in action_space:
         event_probs = sourcingEnv.get_event_probs(a_i)
         for k in range(sourcingEnv.n_suppliers):
+
             i_state_supp = copy.deepcopy(j_state[1])
-            i_state_supp[k] = j_state[1][k] - a_i[k]
-            change_i_state = MState(j_state[0] + 1, sourcingEnv.n_suppliers, np.array(i_state_supp), np.array(j_state[2]))
+            i_state_supp[k] = np.clip(j_state[1][k] - a_i[k], 0, MAX_INVEN_LP)
+            j_state_s = np.clip(j_state[0] + 1, BACKORDER_MAX_LP, MAX_INVEN_LP)
+            change_i_state = MState(j_state_s, sourcingEnv.n_suppliers, np.array(i_state_supp), np.array(j_state[2]))
             poss_i_states_tuples.append((a_i, change_i_state, event_probs[0])) # Event DEMAND_ARRIVAL
             
             if change_i_state.get_nested_list() not in poss_states_new:
@@ -87,8 +89,9 @@ for j_state in poss_states:
                 add_in_additional_var(change_i_state, a_i)
             
             i_state_supp = copy.deepcopy(j_state[1])
-            i_state_supp[k] = j_state[1][k] - a_i[k] + 1
-            change_i_state = MState(j_state[0] - 1, sourcingEnv.n_suppliers, np.array(i_state_supp), np.array(j_state[2]))
+            i_state_supp[k] = np.clip(j_state[1][k] - a_i[k] + 1, 0, MAX_INVEN_LP)
+            j_state_s = np.clip(j_state[0] - 1, BACKORDER_MAX_LP, MAX_INVEN_LP)
+            change_i_state = MState(j_state_s, sourcingEnv.n_suppliers, np.array(i_state_supp), np.array(j_state[2]))
             index = sourcingEnv.get_event_index_from_event(Event.SUPPLY_ARRIVAL, k)
             poss_i_states_tuples.append((a_i, change_i_state, event_probs[index])) # Event SUPPLY_ARRIVAL
             
@@ -100,24 +103,19 @@ for j_state in poss_states:
             i_state_v = copy.deepcopy(j_state[2])
             if j_state[2][k] == 1:
                 i_state_v[k] = 0
-                change_i_state = MState(j_state[0], sourcingEnv.n_suppliers, np.array(j_state[1]), np.array(i_state_v))
-                index = sourcingEnv.get_event_index_from_event(Event.SUPPLIER_ON, k)
-                poss_i_states_tuples.append((a_i, change_i_state, event_probs[index])) # Event SUPPLY_ON
-                if change_i_state.get_nested_list() not in poss_states_new:
-                    poss_states_new.append(change_i_state.get_nested_list())
-                if (change_i_state.get_nested_list_repr(), repr(list(a_i))) not in x:
-                    add_in_additional_var(change_i_state, a_i)
-                
-            i_state_v = copy.deepcopy(j_state[2])
-            if j_state[2][k] == 0:
+                v_event = Event.SUPPLIER_ON
+            elif j_state[2][k] == 0:
                 i_state_v[k] = 1
-                change_i_state = MState(j_state[0], sourcingEnv.n_suppliers, np.array(j_state[1]), np.array(i_state_v))
-                index = sourcingEnv.get_event_index_from_event(Event.SUPPLIER_OFF, k)
-                poss_i_states_tuples.append((a_i, change_i_state, event_probs[index])) # Event SUPPLY_OFF
-                if change_i_state.get_nested_list() not in poss_states_new:
-                    poss_states_new.append(change_i_state.get_nested_list())
-                if (change_i_state.get_nested_list_repr(), repr(list(a_i))) not in x:
-                    add_in_additional_var(change_i_state, a_i)
+                v_event = Event.SUPPLIER_OFF
+
+            change_i_state = MState(j_state[0], sourcingEnv.n_suppliers, np.array(j_state[1]), np.array(i_state_v))
+            index = sourcingEnv.get_event_index_from_event(v_event, k)
+            poss_i_states_tuples.append((a_i, change_i_state, event_probs[index]))
+
+            if change_i_state.get_nested_list() not in poss_states_new:
+                poss_states_new.append(change_i_state.get_nested_list())
+            if (change_i_state.get_nested_list_repr(), repr(list(a_i))) not in x:
+                add_in_additional_var(change_i_state, a_i)                
             
     m.addConstr(gp.quicksum(x[j_state_obj.get_nested_list_repr(), repr(list(a))] for a in action_space) - gp.quicksum(pij*x[state_i.get_nested_list_repr(), repr(list(a_i2))] for (a_i2, state_i, pij) in poss_i_states_tuples) == 0)
 poss_states = copy.deepcopy(poss_states_new)

@@ -101,14 +101,21 @@ for j_state in poss_states:
                 change_i_state = MState(j_state[0], sourcingEnv.n_suppliers, np.array(j_state[1]), np.array(i_state_v))
                 index = sourcingEnv.get_event_index_from_event(Event.SUPPLIER_ON, k)
                 poss_i_states_tuples.append((a_i, change_i_state, event_probs[index])) # Event SUPPLY_ON
-            
+                if change_i_state.get_nested_list() not in poss_states_new:
+                    poss_states_new.append(change_i_state.get_nested_list())
+                if (change_i_state.get_nested_list_repr(), repr(list(a_i))) not in x:
+                    add_in_additional_var(change_i_state, a_i)
+                
             i_state_v = copy.deepcopy(j_state[2])
             if j_state[2][k] == 0:
                 i_state_v[k] = 1
                 change_i_state = MState(j_state[0], sourcingEnv.n_suppliers, np.array(j_state[1]), np.array(i_state_v))
                 index = sourcingEnv.get_event_index_from_event(Event.SUPPLIER_OFF, k)
                 poss_i_states_tuples.append((a_i, change_i_state, event_probs[index])) # Event SUPPLY_OFF
-                # add_in_additional_var(change_i_state, a_i)
+                if change_i_state.get_nested_list() not in poss_states_new:
+                    poss_states_new.append(change_i_state.get_nested_list())
+                if (change_i_state.get_nested_list_repr(), repr(list(a_i))) not in x:
+                    add_in_additional_var(change_i_state, a_i)
             
     m.addConstr(gp.quicksum(x[j_state_obj.get_nested_list_repr(), repr(list(a))] for a in action_space) - gp.quicksum(pij*x[state_i.get_nested_list_repr(), repr(list(a_i2))] for (a_i2, state_i, pij) in poss_i_states_tuples) == 0)
 poss_states = copy.deepcopy(poss_states_new)

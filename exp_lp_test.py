@@ -77,28 +77,32 @@ for j_state in poss_states:
         event_probs = sourcingEnv.get_event_probs(a_i)
         for k in range(sourcingEnv.n_suppliers):
 
-            i_state_supp = copy.deepcopy(j_state[1])
-            i_state_supp[k] = np.clip(j_state[1][k] - a_i[k], 0, MAX_INVEN_LP)
-            j_state_s = np.clip(j_state[0] + 1, BACKORDER_MAX_LP, MAX_INVEN_LP)
-            change_i_state = MState(j_state_s, sourcingEnv.n_suppliers, np.array(i_state_supp), np.array(j_state[2]))
-            poss_i_states_tuples.append((a_i, change_i_state, event_probs[0])) # Event DEMAND_ARRIVAL
+            # DEMAND_ARRIVAL
+            if BACKORDER_MAX_LP < j_state[0] + 1 < MAX_INVEN_LP:
+                i_state_supp = copy.deepcopy(j_state[1])
+                i_state_supp[k] = np.clip(j_state[1][k] - a_i[k], 0, MAX_INVEN_LP)
+                j_state_s = np.clip(j_state[0] + 1, BACKORDER_MAX_LP, MAX_INVEN_LP)
+                change_i_state = MState(j_state_s, sourcingEnv.n_suppliers, np.array(i_state_supp), np.array(j_state[2]))
+                poss_i_states_tuples.append((a_i, change_i_state, event_probs[0])) # Event DEMAND_ARRIVAL
+
+                if change_i_state.get_nested_list() not in poss_states_new:
+                    poss_states_new.append(change_i_state.get_nested_list())
+                if (change_i_state.get_nested_list_repr(), repr(list(a_i))) not in x:
+                    add_in_additional_var(change_i_state, a_i)
+
+            # SUPPLY_ARRIVAL
+            if BACKORDER_MAX_LP < j_state[0] - 1 < MAX_INVEN_LP:
+                i_state_supp = copy.deepcopy(j_state[1])
+                i_state_supp[k] = np.clip(j_state[1][k] - a_i[k] + 1, 0, MAX_INVEN_LP)
+                j_state_s = np.clip(j_state[0] - 1, BACKORDER_MAX_LP, MAX_INVEN_LP)
+                change_i_state = MState(j_state_s, sourcingEnv.n_suppliers, np.array(i_state_supp), np.array(j_state[2]))
+                index = sourcingEnv.get_event_index_from_event(Event.SUPPLY_ARRIVAL, k)
+                poss_i_states_tuples.append((a_i, change_i_state, event_probs[index])) # Event SUPPLY_ARRIVAL
             
-            if change_i_state.get_nested_list() not in poss_states_new:
-                poss_states_new.append(change_i_state.get_nested_list())
-            if (change_i_state.get_nested_list_repr(), repr(list(a_i))) not in x:
-                add_in_additional_var(change_i_state, a_i)
-            
-            i_state_supp = copy.deepcopy(j_state[1])
-            i_state_supp[k] = np.clip(j_state[1][k] - a_i[k] + 1, 0, MAX_INVEN_LP)
-            j_state_s = np.clip(j_state[0] - 1, BACKORDER_MAX_LP, MAX_INVEN_LP)
-            change_i_state = MState(j_state_s, sourcingEnv.n_suppliers, np.array(i_state_supp), np.array(j_state[2]))
-            index = sourcingEnv.get_event_index_from_event(Event.SUPPLY_ARRIVAL, k)
-            poss_i_states_tuples.append((a_i, change_i_state, event_probs[index])) # Event SUPPLY_ARRIVAL
-            
-            if change_i_state.get_nested_list() not in poss_states_new:
-                poss_states_new.append(change_i_state.get_nested_list())
-            if (change_i_state.get_nested_list_repr(), repr(list(a_i))) not in x:
-                add_in_additional_var(change_i_state, a_i)
+                if change_i_state.get_nested_list() not in poss_states_new:
+                    poss_states_new.append(change_i_state.get_nested_list())
+                if (change_i_state.get_nested_list_repr(), repr(list(a_i))) not in x:
+                    add_in_additional_var(change_i_state, a_i)
 
             i_state_v = copy.deepcopy(j_state[2])
             if j_state[2][k] == 1:
@@ -135,9 +139,11 @@ for s in poss_states_objs:
         if (s.get_nested_list_repr(), repr(list(a))) not in x:
             add_in_additional_var(s, a)
 
-m.addConstr(gp.quicksum(sourcingEnv.compute_event_arrival_time(a, state_obj = state_i)*x[state_i.get_nested_list_repr(), repr(list(a))] for state_i in poss_states_objs for a in action_space) == 5)
+m.addConstr(gp.quicksum(sourcingEnv.compute_event_arrival_time(a, state_obj = state_i)*x[state_i.get_nested_list_repr(), repr(list(a))] for state_i in poss_states_objs for a in action_space) == 1)
 
 ################################################################
+
+m.setObjective(GRB.MAXIMIZE)
 
 m.optimize()
 m.write("model_lp_2source.lp")

@@ -50,6 +50,6 @@ DI_SF_FAC = cfg['dual_index']['di_safety_factor'] if 'dual_index' in cfg and 'di
 ##
 MODEL_ARGS_DIC = cfg
 
-MAX_INVEN_LP = 8
-BACKORDER_MAX_LP = -4
-ACTION_SIZE_LP = 9
+MAX_INVEN_LP = cfg['lp_config']['max_inven_lp'] if 'lp_config' in cfg and 'max_inven_lp' in cfg['lp_config'] else 8
+BACKORDER_MAX_LP = cfg['lp_config']['backorder_max_lp'] if 'lp_config' in cfg and 'backorder_max_lp' in cfg['lp_config'] else -3
+ACTION_SIZE_LP = cfg['lp_config']['action_size_lp'] if 'lp_config' in cfg and 'action_size_lp' in cfg['lp_config'] else 4

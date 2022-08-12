@@ -37,7 +37,7 @@ def mc_episode_with_policy(sourcingEnv,
 
 def mc_with_policy(sourcingEnv, 
     start_state = False,
-    policy_callback = ss_policy_fastest_supp_backlog, 
+    policy_callback = myopic2_policy, 
     nested_mc_iters = NESTED_MC_ITERS,
     use_tqdm = False,
     **kwargs):

@@ -135,7 +135,7 @@ for s in poss_states_objs:
         if (s.get_nested_list_repr(), repr(list(a))) not in x:
             add_in_additional_var(s, a)
 
-m.addConstr(gp.quicksum(sourcingEnv.compute_event_arrival_time(a, state_obj = state_i)*x[state_i.get_nested_list_repr(), repr(list(a))] for state_i in poss_states_objs for a in action_space) == 1)
+m.addConstr(gp.quicksum(sourcingEnv.compute_event_arrival_time(a, state_obj = state_i)*x[state_i.get_nested_list_repr(), repr(list(a))] for state_i in poss_states_objs for a in action_space) == 5)
 
 ################################################################
 

@@ -1,3 +1,4 @@
+from os import stat
 import numpy as np
 from env.SourcingEnv import *
 from sim.policies import *
@@ -70,7 +71,8 @@ def approx_value_iteration(sourcingEnv, initial_state,
     debug_bool = DEBUG_BOOL,
     learn_rate = FIXED_LEARN_RATE,
     small_s = SMALL_S, 
-    big_s = BIG_S, ):
+    big_s = BIG_S, 
+    cache_value_est = True):
     # initialize random values.array
     # simulate 5x as a first guess, and use a uniform range
     
@@ -85,6 +87,9 @@ def approx_value_iteration(sourcingEnv, initial_state,
     # initialize states, ex. dual sourcing 40k, 3x sourcing 800k states
     state_value_dic = {}
     sourcingEnv.reset()
+
+    if cache_value_est:
+        cache_value_dic ={}
 
     # Iterate all episodes, do periodic MC update.
     now = datetime.now()
@@ -117,9 +122,16 @@ def approx_value_iteration(sourcingEnv, initial_state,
                             state_value_dic[state_key]= (avg_value_estimate, state_value_dic[state_key][1] + 1)
                         else:
                             # there is a explore_eps chance of state-value re-estimation, and value update
-                            value_estimates = mc_with_policy(sourcingEnvCopy, potential_state, big_s = big_s, small_s = small_s)
+                            if cache_value_est and state_key in cache_value_dic:
+                                value_estimates = cache_value_dic[state_key]
+                            elif cache_value_est and state_key not in cache_value_dic:
+                                value_estimates = mc_with_policy(sourcingEnvCopy, potential_state, big_s = big_s, small_s = small_s)
+                                cache_value_dic[state_key] = value_estimates
+                            else:
+                                value_estimates = mc_with_policy(sourcingEnvCopy, potential_state, big_s = big_s, small_s = small_s)
+                            
                             avg_value_estimate = -np.mean(value_estimates)
-
+                            
                             # value update on the MC explored states
                             if state_key not in state_value_dic:
                                 state_value_dic[state_key] = (avg_value_estimate, 1)

@@ -143,17 +143,17 @@ m.addConstr(gp.quicksum(sourcingEnv.compute_event_arrival_time(a, state_obj = st
 
 ################################################################
 
-m.setObjective(GRB.MAXIMIZE)
+m.setObjective(GRB.MINIMIZE)
 
 m.optimize()
 m.write("model_lp_2source.lp")
 m.printStats()
 m.printAttr('x')
-print("all variables")
+# print("all variables")
 # Optimal Policy 
-for state in poss_states:
-    for a in action_space:
-        guro_var = m.getVarByName('var_x..' + repr(state) + ".." + str(a))
-        # if guro_var is not None and guro_var.X > 0:
-        print(guro_var)
+# for state in poss_states:
+#     for a in action_space:
+#         guro_var = m.getVarByName('var_x..' + repr(state) + ".." + str(a))
+#         # if guro_var is not None and guro_var.X > 0:
+#         print(guro_var)
 

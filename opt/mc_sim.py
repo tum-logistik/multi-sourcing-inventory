@@ -257,23 +257,16 @@ def find_opt_ss_policy_via_mc(sourcingEnv,
 
 # SSN, best single sourcing newsvendor solution
 def ssn_policy(sourcingEnv, **kwargs):
-    single_supplier_mean_costs = []
 
     s_custom = MState(stock_level = 0, 
-    n_suppliers = N_SUPPLIERS, 
-    n_backorders = np.array([0, 0]), 
-    flag_on_off = np.array([1, 1]))
+        n_suppliers = N_SUPPLIERS, 
+        n_backorders = np.array([0, 0]), 
+        flag_on_off = np.array([1, 1]))
 
     opt_cost = np.Inf
     order_vec = np.zeros(sourcingEnv.n_suppliers)
     
     for s in range(sourcingEnv.n_suppliers):
-        kwargs = {"periods" : 30,
-            "nested_mc_iters" : 30,
-            "h_cost": H_COST,
-            "b_penalty" : B_PENALTY,
-            "supplier_index": s
-        }
         single_supplier_costs = mc_with_policy(sourcingEnv, start_state = s_custom, 
             use_tqdm = False,
             policy_callback = single_source_orderupto_policy,
@@ -281,7 +274,9 @@ def ssn_policy(sourcingEnv, **kwargs):
         ssup_cost = np.min(single_supplier_costs)
         if ssup_cost < opt_cost:
             order_vec = np.zeros(sourcingEnv.n_suppliers)
-            order_action = single_source_orderupto_policy(sourcingEnv, **kwargs)
-            order_vec = order_action
+            order_vec = np.array(newsvendor_opt_order(PROCUREMENT_COST_VEC[s]))
+
+            # order_action = single_source_orderupto_policy(sourcingEnv, **kwargs)
+            # order_vec = order_action
     
     return order_vec

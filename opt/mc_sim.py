@@ -73,7 +73,7 @@ def approx_value_iteration(sourcingEnv, initial_state,
     small_s = SMALL_S, 
     big_s = BIG_S, 
     cache_value_est = True,
-    run_diagnostic_bool = True):
+    use_tqdm = False):
     # initialize random values.array
     # simulate 5x as a first guess, and use a uniform range
     
@@ -97,11 +97,11 @@ def approx_value_iteration(sourcingEnv, initial_state,
     model_start_date_time = now.strftime("%m-%d-%Y-%H-%M-%S")
 
     # for e in range(num_episodes):
-    for e in tqdm(range(num_episodes)) if debug_bool else range(num_episodes):
+    for e in tqdm(range(num_episodes)) if use_tqdm else range(num_episodes):
         episode_start_time = time.time()
         sourcingEnv.reset()
         # for m in range(max_steps):
-        for m in tqdm(range(max_steps), leave=False) if debug_bool else range(max_steps):
+        for m in tqdm(range(max_steps), leave=False) if use_tqdm else range(max_steps):
             step_start_time = time.time()
             # careful about backlog order
             possible_joint_actions = get_combo(int(max_stock - sourcingEnv.current_state.s), sourcingEnv.n_suppliers)
@@ -128,10 +128,10 @@ def approx_value_iteration(sourcingEnv, initial_state,
                             if cache_value_est and state_key in cache_value_dic:
                                 value_estimates = cache_value_dic[state_key]
                             elif cache_value_est and state_key not in cache_value_dic:
-                                value_estimates = mc_with_policy(sourcingEnvCopy, potential_state, big_s = big_s, small_s = small_s, policy_callback = myopic2_policy)
+                                value_estimates = mc_with_policy(sourcingEnvCopy, potential_state, big_s = big_s, small_s = small_s, policy_callback = ssn_policy)
                                 cache_value_dic[state_key] = value_estimates
                             else:
-                                value_estimates = mc_with_policy(sourcingEnvCopy, potential_state, big_s = big_s, small_s = small_s, policy_callback = myopic2_policy)
+                                value_estimates = mc_with_policy(sourcingEnvCopy, potential_state, big_s = big_s, small_s = small_s, policy_callback = ssn_policy)
                             
                             avg_value_estimate = -np.mean(value_estimates)
                             
@@ -217,7 +217,7 @@ def approx_value_iteration(sourcingEnv, initial_state,
         episode_run_time = time.time() - episode_start_time
         print("############ episode: {ep} | elapsed time: {time}".format(ep = str(e), time = str(episode_run_time) ))
         if debug_bool:
-            with open(result_filename, 'a') as file:
+            with open(debug_write_path, 'a') as file:
                 file.write("############ episode: {ep} | elapsed time: {time}".format(ep = str(e), time = str(episode_run_time)))
         else:
             print("############ episode: {ep} | elapsed time: {time}".format(ep = str(e), time = str(episode_run_time) ))
@@ -254,3 +254,34 @@ def find_opt_ss_policy_via_mc(sourcingEnv,
                 print("new best value: " + str((best_small_s, best_big_s, best_val)))
     
     return best_small_s, best_big_s, best_val
+
+# SSN, best single sourcing newsvendor solution
+def ssn_policy(sourcingEnv, **kwargs):
+    single_supplier_mean_costs = []
+
+    s_custom = MState(stock_level = 0, 
+    n_suppliers = N_SUPPLIERS, 
+    n_backorders = np.array([0, 0]), 
+    flag_on_off = np.array([1, 1]))
+
+    opt_cost = np.Inf
+    rder_vec = np.zeros(sourcingEnv.n_suppliers)
+    
+    for s in range(sourcingEnv.n_suppliers):
+        kwargs = {"periods" : 30,
+            "nested_mc_iters" : 30,
+            "h_cost": H_COST,
+            "b_penalty" : B_PENALTY,
+            "supplier_index": s
+        }
+        single_supplier_costs = mc_with_policy(sourcingEnv, start_state = s_custom, 
+            use_tqdm = False,
+            policy_callback = single_source_orderupto_policy,
+            **kwargs)
+        ssup_cost = np.min(single_supplier_costs)
+        if ssup_cost < opt_cost:
+            order_vec = np.zeros(sourcingEnv.n_suppliers)
+            order_action = single_source_orderupto_policy(sourcingEnv, **kwargs)
+            order_vec = order_action
+    
+    return order_vec

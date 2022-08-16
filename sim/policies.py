@@ -4,6 +4,7 @@ from scipy.stats import poisson
 from sim.sim_functions import *
 import yaml
 import copy
+# from opt.mc_sim import *
 
 def ss_policy(inventory_level, small_s, big_s):
 
@@ -118,7 +119,6 @@ def single_source_orderupto_policy(sourcingEnv, **kwargs):
     action_array = np.zeros(sourcingEnv.n_suppliers)
     action_array[supplier_index] = order_amount
     return action_array
-
 
 # implement kiesmueller heuristic, / COP
 

@@ -96,20 +96,12 @@ def approx_value_iteration(sourcingEnv, initial_state,
     now = datetime.now()
     model_start_date_time = now.strftime("%m-%d-%Y-%H-%M-%S")
 
-    if run_diagnostic_bool:
-        result_filename = "./output/diagnostic_output_%s.txt"%model_start_date_time
-        with open(result_filename, 'a') as file:  # Overwrites any existing file.
-            file.write("test " + "\n")
-
     # for e in range(num_episodes):
-    for e in tqdm(range(num_episodes)) if run_diagnostic_bool else range(num_episodes):
+    for e in tqdm(range(num_episodes)) if debug_bool else range(num_episodes):
         episode_start_time = time.time()
         sourcingEnv.reset()
         # for m in range(max_steps):
-        for m in tqdm(range(max_steps), leave=False) if run_diagnostic_bool else range(max_steps):
-            if run_diagnostic_bool:
-                with open(result_filename, 'a') as file:
-                    file.write("Episode no.: " + str(e) + "/" + str(num_episodes) + " step no.: " + str(m) + "/" + str(max_steps))
+        for m in tqdm(range(max_steps), leave=False) if debug_bool else range(max_steps):
             step_start_time = time.time()
             # careful about backlog order
             possible_joint_actions = get_combo(int(max_stock - sourcingEnv.current_state.s), sourcingEnv.n_suppliers)
@@ -136,10 +128,10 @@ def approx_value_iteration(sourcingEnv, initial_state,
                             if cache_value_est and state_key in cache_value_dic:
                                 value_estimates = cache_value_dic[state_key]
                             elif cache_value_est and state_key not in cache_value_dic:
-                                value_estimates = mc_with_policy(sourcingEnvCopy, potential_state, big_s = big_s, small_s = small_s)
+                                value_estimates = mc_with_policy(sourcingEnvCopy, potential_state, big_s = big_s, small_s = small_s, policy_callback = myopic2_policy)
                                 cache_value_dic[state_key] = value_estimates
                             else:
-                                value_estimates = mc_with_policy(sourcingEnvCopy, potential_state, big_s = big_s, small_s = small_s)
+                                value_estimates = mc_with_policy(sourcingEnvCopy, potential_state, big_s = big_s, small_s = small_s, policy_callback = myopic2_policy)
                             
                             avg_value_estimate = -np.mean(value_estimates)
                             
@@ -152,7 +144,10 @@ def approx_value_iteration(sourcingEnv, initial_state,
                                 state_value_dic[state_key] = (new_value_adap, state_value_dic[state_key][1] + 1)
                             
                             if debug_bool:
-                                print("episode: {ep}  | step: {st} | potential_state: {ps}| vdic size: {vdic}".format(ep = str(e), st = str(m), ps = str(potential_state), vdic = str(len(state_value_dic))))
+                                with open(debug_write_path, 'a') as file:
+                                    msg_write = "episode: {ep}  | step: {st} | potential_state: {ps}| vdic size: {vdic}".format(ep = str(e), st = str(m), ps = str(potential_state), vdic = str(len(state_value_dic)))
+                                    file.write(msg_write + "\n")
+                                # print("episode: {ep}  | step: {st} | potential_state: {ps}| vdic size: {vdic}".format(ep = str(e), st = str(m), ps = str(potential_state), vdic = str(len(state_value_dic))))
                             
                         # if np.random.uniform(0, 1, 1)[0] < explore_eps:
                         # else:
@@ -200,16 +195,16 @@ def approx_value_iteration(sourcingEnv, initial_state,
             
             step_time = time.time() - step_start_time
             
-            debug_trans_msg = "############ [STATE INFO] next_state: {ns} | event: {ev}| sel. act: {sa}| sup index: {sind}".format(ns= str(next_state), ev = str(event), sa = str(selected_action), sind = str(supplier_index))
+            # debug_trans_msg = "############ [STATE INFO] next_state: {ns} | event: {ev}| sel. act: {sa}| sup index: {sind}".format(ns= str(next_state), ev = str(event), sa = str(selected_action), sind = str(supplier_index))
             debug_count_msg = "############ [STEP TIME] episode: {ep} | step: {st}| elapsed time: {time}".format(ep = str(e), time = str(step_time), st = str(m))
             
             with open(debug_write_path, 'a') as f:
                 f.write(trans_ac_type + "\n")
-                f.write(debug_trans_msg + "\n")
+                # f.write(debug_trans_msg + "\n")
                 f.write(debug_count_msg + "\n")
                 f.close()
 
-            print(debug_trans_msg)
+            # print(debug_trans_msg)
             print(debug_count_msg)
 
         # model save every save_interval intervals
@@ -221,6 +216,11 @@ def approx_value_iteration(sourcingEnv, initial_state,
         
         episode_run_time = time.time() - episode_start_time
         print("############ episode: {ep} | elapsed time: {time}".format(ep = str(e), time = str(episode_run_time) ))
+        if debug_bool:
+            with open(result_filename, 'a') as file:
+                file.write("############ episode: {ep} | elapsed time: {time}".format(ep = str(e), time = str(episode_run_time)))
+        else:
+            print("############ episode: {ep} | elapsed time: {time}".format(ep = str(e), time = str(episode_run_time) ))
     
     return {"state_value_dic": state_value_dic, "model_params": model_args_dic, "mdp_env": sourcingEnv}
 

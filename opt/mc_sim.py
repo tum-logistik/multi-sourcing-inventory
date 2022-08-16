@@ -72,7 +72,8 @@ def approx_value_iteration(sourcingEnv, initial_state,
     learn_rate = FIXED_LEARN_RATE,
     small_s = SMALL_S, 
     big_s = BIG_S, 
-    cache_value_est = True):
+    cache_value_est = True,
+    run_diagnostic_bool = True):
     # initialize random values.array
     # simulate 5x as a first guess, and use a uniform range
     
@@ -95,10 +96,20 @@ def approx_value_iteration(sourcingEnv, initial_state,
     now = datetime.now()
     model_start_date_time = now.strftime("%m-%d-%Y-%H-%M-%S")
 
-    for e in range(num_episodes):
+    if run_diagnostic_bool:
+        result_filename = "./output/diagnostic_output_%s.txt"%model_start_date_time
+        with open(result_filename, 'a') as file:  # Overwrites any existing file.
+            file.write("test " + "\n")
+
+    # for e in range(num_episodes):
+    for e in tqdm(range(num_episodes)) if run_diagnostic_bool else range(num_episodes):
         episode_start_time = time.time()
         sourcingEnv.reset()
-        for m in range(max_steps):
+        # for m in range(max_steps):
+        for m in tqdm(range(max_steps), leave=False) if run_diagnostic_bool else range(max_steps):
+            if run_diagnostic_bool:
+                with open(result_filename, 'a') as file:
+                    file.write("Episode no.: " + str(e) + "/" + str(num_episodes) + " step no.: " + str(m) + "/" + str(max_steps))
             step_start_time = time.time()
             # careful about backlog order
             possible_joint_actions = get_combo(int(max_stock - sourcingEnv.current_state.s), sourcingEnv.n_suppliers)

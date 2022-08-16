@@ -86,7 +86,8 @@ def eval_policy_from_value_dic(sourcingEnv,
                     sourcingEnvCopy.current_state = potential_next_state
                     eval_costs = mc_with_policy(sourcingEnvCopy,
                         periods = sub_eval_periods,
-                        nested_mc_iters = sub_nested_mc_iter)
+                        nested_mc_iters = sub_nested_mc_iter,
+                        policy_callback = ss_policy_fastest_supp_backlog)
                     potential_state_value = np.mean(eval_costs)
                 value_contrib += event_probs[e] * potential_state_value
             

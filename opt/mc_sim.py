@@ -265,7 +265,7 @@ def ssn_policy(sourcingEnv, **kwargs):
     flag_on_off = np.array([1, 1]))
 
     opt_cost = np.Inf
-    rder_vec = np.zeros(sourcingEnv.n_suppliers)
+    order_vec = np.zeros(sourcingEnv.n_suppliers)
     
     for s in range(sourcingEnv.n_suppliers):
         kwargs = {"periods" : 30,

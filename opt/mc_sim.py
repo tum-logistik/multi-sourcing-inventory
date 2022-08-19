@@ -68,7 +68,7 @@ def approx_value_iteration(sourcingEnv, initial_state,
                             state_value_dic[state_key] = (avg_value_estimate, state_value_dic[state_key][1] + 1)
                         else:
                             # there is a explore_eps chance of state-value re-estimation, and value update
-                            value_estimates = mc_with_policy(sourcingEnvCopy, potential_state, big_s = big_s, small_s = small_s, policy_callback = ssn_policy)
+                            value_estimates = mc_with_policy(sourcingEnvCopy, potential_state, big_s = big_s, small_s = small_s, policy_callback = myopic1_policy)
                             avg_value_estimate = -np.mean(value_estimates)
 
                             # value update on the MC explored states

@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 
 def mc_episode_with_policy(sourcingEnv, 
-    policy = ss_policy_fastest_supp_backlog, 
+    policy = myopic2_policy, 
     **kwargs):
 
     b_penalty = B_PENALTY if "b_penalty" not in kwargs else kwargs["b_penalty"]

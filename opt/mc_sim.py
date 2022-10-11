@@ -122,7 +122,7 @@ def approx_value_iteration(sourcingEnv, initial_state,
                         if state_key in state_value_dic and np.random.uniform(0, 1, 1)[0] > explore_eps:
                             avg_value_estimate = state_value_dic[state_key][0]
                             # Update state visit
-                            state_value_dic[state_key]= (avg_value_estimate, state_value_dic[state_key][1] + 1)
+                            state_value_dic[state_key] = (avg_value_estimate, state_value_dic[state_key][1] + 1)
                         else:
                             # there is a explore_eps chance of state-value re-estimation, and value update
                             if cache_value_est and state_key in cache_value_dic:

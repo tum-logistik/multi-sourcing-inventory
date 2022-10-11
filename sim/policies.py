@@ -2,9 +2,11 @@ import numpy as np
 from common.variables import *
 from scipy.stats import poisson
 from sim.sim_functions import *
-import yaml
 import copy
-# from opt.mc_sim import *
+from env.HelperClasses import *
+import time
+from tqdm import tqdm
+
 
 def ss_policy(inventory_level, small_s, big_s):
 
@@ -105,15 +107,16 @@ def inv_poisson(perc, lambda_arrival, x_lim = 60, delt = 0):
 
 # implement single supplier newsvendor,
 def newsvendor_opt_order(procurement_cost, b = B_PENALTY, h = H_COST, lambda_arrival = LAMBDA):
-    cf = (b - procurement_cost) / (b + h)
-    opt_inventory = inv_poisson(cf, lambda_arrival = lambda_arrival)
+    cf = np.clip((b - procurement_cost) / (b + h), 0, 1)
+    # opt_inventory = inv_poisson(cf, lambda_arrival = lambda_arrival)
+    opt_inventory = np.clip(poisson.ppf(cf, lambda_arrival), 0, np.Inf)
     return opt_inventory
 
 def single_source_orderupto_policy(sourcingEnv, **kwargs):
     supplier_index = 0 if "supplier_index" not in kwargs else kwargs["supplier_index"]
     procurement_cost_vec = PROCUREMENT_COST_VEC if "procurement_cost_vec" not in kwargs else kwargs["procurement_cost_vec"]
     procurement_cost = procurement_cost_vec[supplier_index]
-    opt_inventory, _ = newsvendor_opt_order(procurement_cost)
+    opt_inventory = newsvendor_opt_order(procurement_cost)
     order_amount = np.clip(opt_inventory - sourcingEnv.current_state.s, 0, np.Inf)
 
     action_array = np.zeros(sourcingEnv.n_suppliers)
@@ -201,3 +204,89 @@ def ss_policy_rand_supp_backlog(sourcingEnv, small_s, big_s):
     policy_action[random_supplier_index] = total_order_amount
     
     return policy_action
+
+# SSN, best single sourcing newsvendor solution
+def ssn_policy(sourcingEnv, **kwargs):
+
+    s_custom = MState(stock_level = 0, 
+        n_suppliers = N_SUPPLIERS, 
+        n_backorders = np.array([0, 0]), 
+        flag_on_off = np.array([1, 1]))
+
+    opt_cost = np.Inf
+    order_vec = np.zeros(sourcingEnv.n_suppliers)
+    
+    for s in range(sourcingEnv.n_suppliers):
+        single_supplier_costs = mc_with_policy(sourcingEnv, start_state = s_custom, 
+            use_tqdm = False,
+            policy_callback = single_source_orderupto_policy,
+            **kwargs)
+        ssup_cost = np.min(single_supplier_costs)
+        if ssup_cost < opt_cost:
+            order_vec = np.zeros(sourcingEnv.n_suppliers)
+            order_vec[s] = np.array(newsvendor_opt_order(PROCUREMENT_COST_VEC[s]))
+
+            # order_action = single_source_orderupto_policy(sourcingEnv, **kwargs)
+            # order_vec = order_action
+    
+    return order_vec
+
+def ssn_policy_fast(sourcingEnv, **kwargs):
+    cost = np.Inf
+    order_vec = np.zeros(sourcingEnv.n_suppliers)
+    for s in range(sourcingEnv.n_suppliers):
+        order_vec_cand = np.zeros(sourcingEnv.n_suppliers)
+        order_vec_cand[s] = np.array(newsvendor_opt_order(PROCUREMENT_COST_VEC[s]))
+        cost_cand = cost_calc(sourcingEnv.current_state) + PROCUREMENT_COST_VEC[s]*order_vec_cand[s]
+        if cost_cand < cost:
+            cost = cost_cand
+            order_vec = order_vec_cand
+    return order_vec
+
+def mc_episode_with_policy(sourcingEnv, 
+    policy = ss_policy_fastest_supp_backlog, 
+    **kwargs):
+
+    b_penalty = B_PENALTY if "b_penalty" not in kwargs else kwargs["b_penalty"]
+    h_cost = H_COST if "h_cost" not in kwargs else kwargs["h_cost"]
+    periods = PERIODS if "periods" not in kwargs else kwargs["periods"]
+    
+    sourcingEnv.reset()
+
+    cost = cost_calc(sourcingEnv.current_state, h_cost = h_cost, b_penalty = b_penalty)
+    total_costs = [cost]
+    for i in range(periods):
+        
+        policy_action = policy(sourcingEnv, **kwargs)
+        next_state, event, event_index, probs, supplier_index = sourcingEnv.step(policy_action)
+        cost = cost_calc(next_state, h_cost = h_cost, b_penalty = b_penalty)
+        
+        total_procurement_cost = np.sum(np.multiply(policy_action, sourcingEnv.procurement_cost_vec))
+        total_cost = cost + total_procurement_cost
+        total_costs.append(total_cost)
+
+    avg_cost_per_period = np.mean(total_costs)
+
+    return np.sum(total_costs), avg_cost_per_period
+
+def mc_with_policy(sourcingEnv, 
+    start_state = False,
+    policy_callback = ss_policy_fastest_supp_backlog, 
+    nested_mc_iters = NESTED_MC_ITERS,
+    use_tqdm = False,
+    **kwargs):
+    
+    mc_avg_costs = []
+
+    for i in tqdm(range(nested_mc_iters)) if use_tqdm else range(nested_mc_iters):
+        if start_state != False:
+            sourcingEnv.current_state = start_state
+
+        start_time = time.time()
+        _, avg_cost = mc_episode_with_policy(sourcingEnv, policy = policy_callback, **kwargs)
+        mc_avg_costs.append(avg_cost)
+        run_time = time.time() - start_time
+        # if i % 100 == 0:
+        #     print("time per 100 iter: " + str(run_time))
+    
+    return mc_avg_costs

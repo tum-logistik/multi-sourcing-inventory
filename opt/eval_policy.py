@@ -117,19 +117,4 @@ def eval_policy_from_value_dic(sourcingEnv,
     # sourcingEnv.reset()
     return best_action
 
-def mc_eval_policy_perf(sourcingEnv, value_dic, 
-    max_steps = MAX_STEPS, 
-    mc_iters = MC_EPISODES,
-    discount_fac = DISCOUNT_FAC,
-    h_cost = H_COST, 
-    b_penalty = B_PENALTY,
-    policy_callback = eval_policy_from_value_dic):
-
-    mc_avg_costs = []
-    for mc in tqdm(range(mc_iters)):
-        cost, avg_cost = policy_callback(sourcingEnv, value_dic, max_steps, discount_fac = discount_fac, h_cost = h_cost, b_penalty = b_penalty)
-        mc_avg_costs.append(avg_cost)
-        # print("MC eval iter: " + str(mc))
-    
-    return mc_avg_costs
 

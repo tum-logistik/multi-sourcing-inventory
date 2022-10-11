@@ -5,6 +5,9 @@ import pickle as pkl
 from env.HelperClasses import *
 from sim.sim_functions import *
 import itertools
+import json
+import pickle as pkl
+from datetime import datetime
 
 GRB = gp.GRB
 
@@ -146,7 +149,7 @@ m.addConstr(gp.quicksum(sourcingEnv.compute_event_arrival_time(a, state_obj = st
 m.setObjective(GRB.MINIMIZE)
 
 m.optimize()
-m.write("model_lp_2source.lp")
+m.write("model_lp_2source.sol")
 m.printStats()
 m.printAttr('x')
 # print("all variables")
@@ -156,4 +159,18 @@ m.printAttr('x')
 #         guro_var = m.getVarByName('var_x..' + repr(state) + ".." + str(a))
 #         # if guro_var is not None and guro_var.X > 0:
 #         print(guro_var)
+
+data = json.loads(m.getJSONSolution())
+nz_sol = [(x['VarName'], x['X']) for x in data['Vars']]
+
+# now = datetime.now()
+# date_time = now.strftime("%m-%d-%Y-%H-%M-%S")
+
+filename_lp = filename.split("output/")
+write_path = 'output/lp_sol_{str_name}'.format(str_name = str(filename_lp[1]))
+
+with open(write_path, 'wb') as handle:
+    pkl.dump(nz_sol, handle, protocol=pkl.HIGHEST_PROTOCOL)
+
+
 

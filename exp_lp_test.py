@@ -20,12 +20,14 @@ with open(filename, 'rb') as f:
     model_params = output_obj["model_params"]
     sourcingEnv = output_obj["mdp_env"]
 
+    off_times = np.array([np.Inf, np.Inf]) if cfg['mdp_env_params']['off_times'] == "no_disrup" else np.array(cfg['mdp_env_params']['off_times'])
+
     sourcingEnv = SourcingEnv(
         lambda_arrival = model_params['mdp_env_params']['lambda'], # or 10
         procurement_cost_vec = np.array(model_params['mdp_env_params']['procurement_cost_vec']),
         supplier_lead_times_vec = np.array(model_params['mdp_env_params']['supplier_lead_times_vec']),
         on_times = np.array(model_params['mdp_env_params']['on_times']), 
-        off_times = np.array(model_params['mdp_env_params']['off_times']))
+        off_times = off_times)
 
 state_s = list(range(BACKORDER_MAX_LP, MAX_INVEN_LP))
 state_backorders = list(itertools.product(range(MAX_INVEN_LP - BACKORDER_MAX_LP), range(sourcingEnv.n_suppliers)))

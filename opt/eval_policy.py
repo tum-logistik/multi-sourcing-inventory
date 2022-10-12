@@ -139,8 +139,8 @@ def lp_mdp_policy(sourcingEnv, **kwargs):
     lp_dic = dict(lp_tups)
 
     state_key = sourcingEnv.current_state.get_nested_list_repr()
-    
-    if state_key in lp_dic:
+
+    if state_key in lp_dic and np.sum(lp_dic[state_key]) != 0:
         order_vec = np.array(lp_dic[state_key])
         return order_vec
     else:

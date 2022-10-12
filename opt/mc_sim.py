@@ -9,7 +9,6 @@ from datetime import datetime
 import pickle
 from tqdm import tqdm
 
-
 def mc_episode_with_policy(sourcingEnv, 
     policy = myopic2_policy, 
     **kwargs):

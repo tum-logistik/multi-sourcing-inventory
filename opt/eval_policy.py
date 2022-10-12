@@ -118,3 +118,35 @@ def eval_policy_from_value_dic(sourcingEnv,
     return best_action
 
 
+def lp_mdp_policy(sourcingEnv, **kwargs):
+
+    filename = None if "filename" not in kwargs else kwargs["filename"]
+    if value_dic == None:
+        print("No LP file detected!")
+        return False
+
+    filename_lp = "output/lp_sol_" + filename
+    with open(filename_lp, 'rb') as f:
+        lp_sol = pkl.load(f)
+    
+    with open("output/" + filename, 'rb') as f:
+        output_obj = pkl.load(f)
+    value_dic = output_obj["state_value_dic"]
+    
+    lp_strs = [x[0] for x in lp_sol]
+    lp_strs_tups = [(x.split("..")[1], x.split("..")[2]) for x in lp_strs]
+    lp_tups = [(x[0], [int(s) for s in re.findall(r'\d+', x[1])] ) for x in lp_strs_tups]
+
+    lp_dic = dict(lp_tups)
+
+    state_key = sourcingEnv.current_state.get_nested_list_repr()
+
+    order_vec = eval_policy_from_value_dic(sourcingEnv, value_dic = value_dic)
+
+    if state_key in lp_dic:
+        order_vec = np.array(lp_dic[state_key])
+        return order_vec
+    else:
+        order_vec = eval_policy_from_value_dic(sourcingEnv, value_dic = value_dic)
+
+    return order_vec

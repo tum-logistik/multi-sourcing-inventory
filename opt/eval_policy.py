@@ -28,7 +28,6 @@ def eval_policy_from_value_dic(sourcingEnv,
     safe_factor = SAFE_FACTOR if "safe_factor" not in kwargs else kwargs["safe_factor"]
     sub_eval_periods = SUB_EVAL_PERIODS if "sub_eval_periods" not in kwargs else kwargs["sub_eval_periods"]
     sub_nested_mc_iter = SUB_NESTED_MC_ITER if "sub_nested_mc_iter" not in kwargs else kwargs["sub_nested_mc_iter"]
-
     value_dic = None if "value_dic" not in kwargs else kwargs["value_dic"]
     if value_dic == None:
         print("Error no value dic supplied!")
@@ -121,7 +120,7 @@ def eval_policy_from_value_dic(sourcingEnv,
 def lp_mdp_policy(sourcingEnv, **kwargs):
 
     filename = None if "filename" not in kwargs else kwargs["filename"]
-    if value_dic == None:
+    if filename == None:
         print("No LP file detected!")
         return False
 
@@ -140,13 +139,11 @@ def lp_mdp_policy(sourcingEnv, **kwargs):
     lp_dic = dict(lp_tups)
 
     state_key = sourcingEnv.current_state.get_nested_list_repr()
-
-    order_vec = eval_policy_from_value_dic(sourcingEnv, value_dic = value_dic)
-
+    
     if state_key in lp_dic:
         order_vec = np.array(lp_dic[state_key])
         return order_vec
     else:
-        order_vec = eval_policy_from_value_dic(sourcingEnv, value_dic = value_dic)
+        order_vec = eval_policy_from_value_dic(sourcingEnv, **kwargs)
 
     return order_vec

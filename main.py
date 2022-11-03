@@ -45,7 +45,6 @@ if __name__ == '__main__':
         max_S = 3)
 
     print("sS* policy: " + str((best_small_s, best_big_s, best_val)))
-
     output_dic = approx_value_iteration(sourcingEnv, s_initial, big_s = best_big_s, small_s = best_small_s)
 
     output_dic['model_params']['git_commit'] = sha

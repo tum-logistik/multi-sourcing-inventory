@@ -154,7 +154,8 @@ def approx_value_iteration(sourcingEnv, initial_state,
                         #     avg_value_estimate = np.mean(list(state_value_dic.values()))
 
                         future_value += reward_contribution + event_probs[i] * avg_value_estimate
-                    action_reward = -np.sum(np.multiply(sourcingEnv.procurement_cost_vec, pa))
+                fixed_costs = get_fixed_costs(possible_joint_actions[pa], fixed_costs_vec = sourcingEnv.fixed_costs)
+                action_reward = -np.sum(np.multiply(sourcingEnv.procurement_cost_vec, possible_joint_actions[pa])) - np.sum(fixed_costs)
 
                 value_array[pa] = action_reward + future_value
                 
@@ -274,8 +275,9 @@ def ssn_policy(sourcingEnv, **kwargs):
         ssup_cost = np.min(single_supplier_costs)
         if ssup_cost < opt_cost:
             order_vec = np.zeros(sourcingEnv.n_suppliers)
-            order_vec = np.array(newsvendor_opt_order(PROCUREMENT_COST_VEC[s]))
-
+            # fast_sup_index = np.argmin(sourcingEnv.supplier_lead_times_vec)
+            order_amt = newsvendor_opt_order(sourcingEnv.procurement_cost_vec[s])
+            order_vec[s] = order_amt
             # order_action = single_source_orderupto_policy(sourcingEnv, **kwargs)
             # order_vec = order_action
     

@@ -13,6 +13,7 @@ class SourcingEnv():
         supplier_lead_times_vec = SUPPLIER_LEAD_TIMES_VEC, 
         on_times = ON_TIMES, 
         off_times = OFF_TIMES,
+        fixed_costs = FIXED_COST_VEC,
         tracking_flag = True):
         
         invert_np = lambda x: 1/x
@@ -25,6 +26,7 @@ class SourcingEnv():
         self.procurement_cost_vec = procurement_cost_vec
         self.supplier_lead_times_vec = supplier_lead_times_vec
         self.n_suppliers = len(procurement_cost_vec)
+        self.fixed_costs = fixed_costs
         _ = self.reset()
 
         self.tracking_flag = tracking_flag

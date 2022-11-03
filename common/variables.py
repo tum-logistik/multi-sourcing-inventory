@@ -36,6 +36,7 @@ PROCUREMENT_COST_VEC = np.array(cfg['mdp_env_params']['procurement_cost_vec'])
 SUPPLIER_LEAD_TIMES_VEC = np.array(cfg['mdp_env_params']['supplier_lead_times_vec'])
 ON_TIMES = np.array(cfg['mdp_env_params']['on_times'])
 OFF_TIMES = np.array([np.Inf, np.Inf]) if cfg['mdp_env_params']['off_times'] == "no_disrup" else np.array(cfg['mdp_env_params']['off_times'])
+FIXED_COST_VEC = np.array(cfg['mdp_env_params']['fixed_costs'])
 
 # Evaluation Params
 SAFE_FACTOR = cfg['eval_params']['safe_factor'] if 'eval_params' in cfg and 'safe_factor' in cfg['eval_params'] else 1.0

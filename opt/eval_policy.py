@@ -74,8 +74,9 @@ def eval_policy_from_value_dic(sourcingEnv,
                 
                 potential_next_cost = -cost_calc(potential_next_state, h_cost = h_cost, b_penalty = b_penalty)
                 state_key = potential_next_state.get_repr_key()
-
-                potential_immediate_cost = -np.sum(np.multiply(sourcingEnv.procurement_cost_vec, pa))
+                
+                fixed_costs = get_fixed_costs(pa, fixed_costs_vec = sourcingEnv.fixed_costs)
+                potential_immediate_cost = -np.sum(np.multiply(sourcingEnv.procurement_cost_vec, pa)) -np.sum(fixed_costs)
 
                 reward_contrib += event_probs[e] * (potential_next_cost + potential_immediate_cost)
                 if state_key in value_dic and value_dic[state_key][1] > n_visit_lim:
@@ -130,8 +131,7 @@ def lp_mdp_policy(sourcingEnv, **kwargs):
     
     with open("output/" + filename, 'rb') as f:
         output_obj = pkl.load(f)
-    value_dic = output_obj["state_value_dic"]
-    
+        
     lp_strs = [x[0] for x in lp_sol]
     lp_strs_tups = [(x.split("..")[1], x.split("..")[2]) for x in lp_strs]
     lp_tups = [(x[0], [int(s) for s in re.findall(r'\d+', x[1])] ) for x in lp_strs_tups]

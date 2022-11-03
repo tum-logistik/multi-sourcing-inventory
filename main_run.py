@@ -23,6 +23,7 @@ with open(filename, 'rb') as f:
         lambda_arrival = model_params['mdp_env_params']['lambda'], # or 10
         procurement_cost_vec = np.array(model_params['mdp_env_params']['procurement_cost_vec']),
         supplier_lead_times_vec = np.array(model_params['mdp_env_params']['supplier_lead_times_vec']),
+        fixed_costs = np.array(model_params['mdp_env_params']['fixed_costs']) if 'fixed_costs' in model_params['mdp_env_params'] else FIXED_COST_VEC,
         on_times = np.array([1, 1]), 
         off_times = np.array([np.Inf, np.Inf]))
     

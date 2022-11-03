@@ -119,7 +119,8 @@ def newsvendor_opt_order(procurement_cost, b = B_PENALTY, h = H_COST, lambda_arr
 def single_source_orderupto_policy(sourcingEnv, **kwargs):
     supplier_index = 0 if "supplier_index" not in kwargs else kwargs["supplier_index"]
     procurement_cost_vec = PROCUREMENT_COST_VEC if "procurement_cost_vec" not in kwargs else kwargs["procurement_cost_vec"]
-    procurement_cost = procurement_cost_vec[supplier_index]
+    
+    procurement_cost = procurement_cost_vec[supplier_index] + sourcingEnv.fixed_costs[supplier_index]
     opt_inventory = newsvendor_opt_order(procurement_cost)
     order_amount = np.clip(opt_inventory - sourcingEnv.current_state.s, 0, np.Inf)
 
@@ -228,7 +229,7 @@ def ssn_policy(sourcingEnv, **kwargs):
         ssup_cost = np.min(single_supplier_costs)
         if ssup_cost < opt_cost:
             order_vec = np.zeros(sourcingEnv.n_suppliers)
-            order_vec[s] = np.array(newsvendor_opt_order(PROCUREMENT_COST_VEC[s]))
+            order_vec[s] = np.array(newsvendor_opt_order(sourcingEnv.procurement_cost_vec[s]))
 
             # order_action = single_source_orderupto_policy(sourcingEnv, **kwargs)
             # order_vec = order_action
@@ -240,8 +241,9 @@ def ssn_policy_fast(sourcingEnv, **kwargs):
     order_vec = np.zeros(sourcingEnv.n_suppliers)
     for s in range(sourcingEnv.n_suppliers):
         order_vec_cand = np.zeros(sourcingEnv.n_suppliers)
-        order_vec_cand[s] = np.array(newsvendor_opt_order(PROCUREMENT_COST_VEC[s]))
-        cost_cand = cost_calc(sourcingEnv.current_state) + PROCUREMENT_COST_VEC[s]*order_vec_cand[s]
+        order_vec_cand[s] = np.array(newsvendor_opt_order(sourcingEnv.procurement_cost_vec[s]))
+        fixed_costs = get_fixed_costs(sourcingEnv.fixed_costs, fixed_cost_vec = sourcingEnv.fixed_costs)
+        cost_cand = cost_calc(sourcingEnv.current_state) + sourcingEnv.procurement_cost_vec[s]*order_vec_cand[s] + fixed_costs[s]
         if cost_cand < cost:
             cost = cost_cand
             order_vec = order_vec_cand
@@ -264,8 +266,9 @@ def mc_episode_with_policy(sourcingEnv,
         policy_action = policy(sourcingEnv, **kwargs)
         next_state, event, event_index, probs, supplier_index = sourcingEnv.step(policy_action)
         cost = cost_calc(next_state, h_cost = h_cost, b_penalty = b_penalty)
+        fixed_costs = get_fixed_costs(policy_action, fixed_costs_vec = sourcingEnv.fixed_costs)
         
-        total_procurement_cost = np.sum(np.multiply(policy_action, sourcingEnv.procurement_cost_vec))
+        total_procurement_cost = np.sum(np.multiply(policy_action, sourcingEnv.procurement_cost_vec)) + np.sum(fixed_costs)
         total_cost = cost + total_procurement_cost
         total_costs.append(total_cost)
 

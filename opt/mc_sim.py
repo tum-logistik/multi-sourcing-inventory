@@ -26,8 +26,9 @@ def mc_episode_with_policy(sourcingEnv,
         policy_action = policy(sourcingEnv, **kwargs)
         next_state, event, event_index, probs, supplier_index = sourcingEnv.step(policy_action)
         cost = cost_calc(next_state, h_cost = h_cost, b_penalty = b_penalty)
+        fixed_costs = get_fixed_costs(policy_action, fixed_costs_vec = sourcingEnv.fixed_costs)
         
-        total_procurement_cost = np.sum(np.multiply(policy_action, sourcingEnv.procurement_cost_vec))
+        total_procurement_cost = np.sum(np.multiply(policy_action, sourcingEnv.procurement_cost_vec)) + np.sum(fixed_costs)
         total_cost = cost + total_procurement_cost
         total_costs.append(total_cost)
 

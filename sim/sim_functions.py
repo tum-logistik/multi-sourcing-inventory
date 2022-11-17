@@ -15,7 +15,12 @@ def cost_calc_expected_di(sourcingEnv, order_quantity_vec, custom_state = None, 
     event_probs = sourcingEnv.get_event_probs(order_quantity_vec)
     current_cost = cost_calc(custom_state)
     proc_costs_pro_rata = sourcingEnv.procurement_cost_vec
-    fixed_costs = get_fixed_costs(order_quantity_vec, fixed_costs_vec = sourcingEnv.fixed_costs)
+
+    if hasattr(sourcingEnv, 'fixed_costs)'):
+        fixed_costs = get_fixed_costs(order_quantity_vec, fixed_costs_vec = sourcingEnv.fixed_costs)
+    else:
+        fixed_costs = [0]*sourcingEnv.n_suppliers
+    
     total_proc_costs = np.sum(np.multiply(proc_costs_pro_rata, order_quantity_vec)) + np.sum(fixed_costs)
 
     exp_demand_cost = event_probs[0] * (current_cost - h_cost if custom_state.s - 1 >= 0  else current_cost + b_penalty)

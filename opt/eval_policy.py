@@ -75,7 +75,11 @@ def eval_policy_from_value_dic(sourcingEnv,
                 potential_next_cost = -cost_calc(potential_next_state, h_cost = h_cost, b_penalty = b_penalty)
                 state_key = potential_next_state.get_repr_key()
                 
-                fixed_costs = get_fixed_costs(pa, fixed_costs_vec = sourcingEnv.fixed_costs)
+                if hasattr(sourcingEnv, 'fixed_costs)'):
+                    fixed_costs = get_fixed_costs(pa, fixed_costs_vec = sourcingEnv.fixed_costs)
+                else:
+                    fixed_costs = [0]*sourcingEnv.n_suppliers
+                
                 potential_immediate_cost = -np.sum(np.multiply(sourcingEnv.procurement_cost_vec, pa)) -np.sum(fixed_costs)
 
                 reward_contrib += event_probs[e] * (potential_next_cost + potential_immediate_cost)

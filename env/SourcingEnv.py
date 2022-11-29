@@ -119,37 +119,43 @@ class SourcingEnv():
             tau_event = self.compute_event_arrival_time(order_quantity_vec)
         
         if event_type == Event.DEMAND_ARRIVAL:
-            return self.lambda_arrival * tau_event
+            return self.lambda_arrival * tau_event, tau_event
         else:
             assert k is not None
             if event_type == Event.SUPPLY_ARRIVAL:
                 outstd_orders = state_obj.n_backorders
-                return (outstd_orders[k] + order_quantity_vec[k]) * self.mu_lt_rate[k] * tau_event
+                return (outstd_orders[k] + order_quantity_vec[k]) * self.mu_lt_rate[k] * tau_event, tau_event
             
             onoff_status = state_obj.flag_on_off[k]
             assert onoff_status > -1, "Assertion Failed: On / off flag outside bound (0, 1)"
             if event_type == Event.SUPPLIER_ON:
-                return (1 - onoff_status) * self.mu_off_times[k] * tau_event
+                return (1 - onoff_status) * self.mu_off_times[k] * tau_event, tau_event
             
             if event_type == Event.SUPPLIER_OFF:
-                return onoff_status * self.mu_on_times[k] * tau_event
+                return onoff_status * self.mu_on_times[k] * tau_event, tau_event
         
-        return 0
+        return 0, tau_event
     
     # action: order_quantity_vec
     def get_event_probs(self, order_quantity_vec):
+        demand_arrival_prob, demand_arrival_tau  = self.compute_trans_prob(order_quantity_vec, Event.DEMAND_ARRIVAL)
+        
+        supply_arrival_probs  = [self.compute_trans_prob(order_quantity_vec, Event.SUPPLY_ARRIVAL, k = i)[0] for i in range(self.n_suppliers)]
+        supply_arrival_tau = self.compute_trans_prob(order_quantity_vec, Event.SUPPLY_ARRIVAL, k = 1)[1]
 
-        demand_arrival_prob = self.compute_trans_prob(order_quantity_vec, Event.DEMAND_ARRIVAL)
-        supply_arrival_probs = [self.compute_trans_prob(order_quantity_vec, Event.SUPPLY_ARRIVAL, k = i) for i in range(self.n_suppliers)]
-        supply_on_probs = [self.compute_trans_prob(order_quantity_vec, Event.SUPPLIER_ON, k = i) for i in range(self.n_suppliers)]
-        supply_off_probs = [self.compute_trans_prob(order_quantity_vec, Event.SUPPLIER_OFF, k = i) for i in range(self.n_suppliers)]
+        supply_on_probs, supply_on_tau = [self.compute_trans_prob(order_quantity_vec, Event.SUPPLIER_ON, k = i)[0] for i in range(self.n_suppliers)]
+        supply_on_tau = self.compute_trans_prob(order_quantity_vec, Event.SUPPLIER_ON, k = 1)[1]
+
+        supply_off_probs, supply_off_tau = [self.compute_trans_prob(order_quantity_vec, Event.SUPPLIER_OFF, k = i)[0] for i in range(self.n_suppliers)]
+        supply_off_tau = self.compute_trans_prob(order_quantity_vec, Event.SUPPLIER_OFF, k = 1)[1]
 
         event_probs = np.array([demand_arrival_prob] + supply_arrival_probs + supply_on_probs + supply_off_probs)
+        event_tau = np.array([demand_arrival_tau] + [supply_arrival_tau] + [supply_on_tau] + [supply_off_tau])
         sum_check = np.sum(event_probs)
 
         assert np.abs(1 - sum_check) < PROB_EPSILON, "Assertion Failed: Probability of events do not sum to 1!"
 
-        return event_probs
+        return event_probs, event_tau
     
     def get_event_index_from_event(self, event, supplier_index):
         if event == Event.DEMAND_ARRIVAL:
@@ -183,11 +189,12 @@ class SourcingEnv():
         assert order_quantity_vec.all() >= 0, "Assertion Failed: Negative order quantity!"
         
         if not force_event_tuple: 
-            event_probs = self.get_event_probs(order_quantity_vec)
+            event_probs, event_taus = self.get_event_probs(order_quantity_vec)
             event_indexes = np.array(range(len(event_probs)))            
             i = np.random.choice(event_indexes, 1, p = event_probs)[0]
         else:
             event_probs = np.zeros(1 + 3*self.n_suppliers)
+            event_taus = np.zeros(1 + 3)
             i = self.get_event_index_from_event(force_event_tuple[0], force_event_tuple[1]) # (event, supplier index)
             event_probs[i] = 1
         
@@ -195,28 +202,32 @@ class SourcingEnv():
         
         if i == 0:
             event = Event.DEMAND_ARRIVAL
+            tau = event_taus[0]
             next_state.s = next_state.s - 1
             supplier_index = None
-
             self.demand_history_tuple = self.append_time_tuple(self.demand_history_tuple, [event_probs[i], 1])
 
         elif 0 < i < 1 + self.n_suppliers:
             event = Event.SUPPLY_ARRIVAL
+            tau = event_taus[1]
             supplier_index = i-1
             next_state.s = next_state.s + next_state.n_backorders[supplier_index]
             next_state.n_backorders[supplier_index] = 0
         elif 1 + self.n_suppliers - 1 < i < 1 + 2*self.n_suppliers:
             event = Event.SUPPLIER_ON
+            tau = event_taus[2]
             supplier_index = i - 1 - self.n_suppliers
             next_state.flag_on_off[supplier_index] = np.clip(next_state.flag_on_off[supplier_index] + 1, 0 ,1)
             assert -1 < next_state.flag_on_off[supplier_index] < 2, "Assertion Failed: Supplier ON Index over 1 or under 0"
         elif 1 + 2*self.n_suppliers - 1 < i:
             event = Event.SUPPLIER_OFF
+            tau = event_taus[3]
             supplier_index = i - 1 - 2*self.n_suppliers
             next_state.flag_on_off[supplier_index] = np.clip(next_state.flag_on_off[supplier_index] - 1, 0 ,1)
             assert -1 < next_state.flag_on_off[supplier_index] < 2, "Assertion Failed: Supplier OFF Index over 1 or under 0"
         else:
             event = Event.NO_EVENT # No state transition
+            tau = 1.0
             supplier_index = None
         
         if hasattr(self, 'tracking_flag'):
@@ -233,6 +244,7 @@ class SourcingEnv():
         else:
             assert event in [Event.DEMAND_ARRIVAL, Event.NO_EVENT], "AssertAssertion Failed: Unknown event."
 
+        next_state.previous_tau = tau
         self.current_state = next_state
         
         return next_state, event, i, event_probs, supplier_index

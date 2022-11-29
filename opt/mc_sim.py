@@ -1,3 +1,4 @@
+from os import stat
 import numpy as np
 from env.SourcingEnv import *
 from sim.policies import *
@@ -8,9 +9,8 @@ from datetime import datetime
 import pickle
 from tqdm import tqdm
 
-
 def mc_episode_with_policy(sourcingEnv, 
-    policy = ss_policy_fastest_supp_backlog, 
+    policy = myopic2_policy, 
     **kwargs):
 
     b_penalty = B_PENALTY if "b_penalty" not in kwargs else kwargs["b_penalty"]
@@ -27,17 +27,25 @@ def mc_episode_with_policy(sourcingEnv,
         next_state, event, event_index, probs, supplier_index = sourcingEnv.step(policy_action)
         cost = cost_calc(next_state, h_cost = h_cost, b_penalty = b_penalty)
         
-        total_procurement_cost = np.sum(np.multiply(policy_action, sourcingEnv.procurement_cost_vec))
+        if hasattr(sourcingEnv, 'fixed_costs)'):
+            fixed_costs = get_fixed_costs(policy_action, fixed_costs_vec = sourcingEnv.fixed_costs)
+        else:
+            fixed_costs = [0]*sourcingEnv.n_suppliers
+        
+        procurement_cost_if_avail = np.multiply(policy_action, sourcingEnv.procurement_cost_vec)
+        procurement_cost = np.sum(np.multiply(procurement_cost_if_avail, sourcingEnv.current_state.flag_on_off))
+
+        total_procurement_cost = procurement_cost + np.sum(fixed_costs)
         total_cost = cost + total_procurement_cost
         total_costs.append(total_cost)
 
     avg_cost_per_period = np.mean(total_costs)
 
-    return np.sum(total_costs), avg_cost_per_period
+    return total_costs, avg_cost_per_period
 
 def mc_with_policy(sourcingEnv, 
     start_state = False,
-    policy_callback = ss_policy_fastest_supp_backlog, 
+    policy_callback = myopic2_policy, 
     nested_mc_iters = NESTED_MC_ITERS,
     use_tqdm = False,
     **kwargs):
@@ -70,7 +78,9 @@ def approx_value_iteration(sourcingEnv, initial_state,
     debug_bool = DEBUG_BOOL,
     learn_rate = FIXED_LEARN_RATE,
     small_s = SMALL_S, 
-    big_s = BIG_S, ):
+    big_s = BIG_S, 
+    cache_value_est = True,
+    use_tqdm = False):
     # initialize random values.array
     # simulate 5x as a first guess, and use a uniform range
     
@@ -86,14 +96,19 @@ def approx_value_iteration(sourcingEnv, initial_state,
     state_value_dic = {}
     sourcingEnv.reset()
 
+    if cache_value_est:
+        cache_value_dic ={}
+
     # Iterate all episodes, do periodic MC update.
     now = datetime.now()
     model_start_date_time = now.strftime("%m-%d-%Y-%H-%M-%S")
 
-    for e in range(num_episodes):
+    # for e in range(num_episodes):
+    for e in tqdm(range(num_episodes)) if use_tqdm else range(num_episodes):
         episode_start_time = time.time()
         sourcingEnv.reset()
-        for m in range(max_steps):
+        # for m in range(max_steps):
+        for m in tqdm(range(max_steps), leave=False) if use_tqdm else range(max_steps):
             step_start_time = time.time()
             # careful about backlog order
             possible_joint_actions = get_combo(int(max_stock - sourcingEnv.current_state.s), sourcingEnv.n_suppliers)
@@ -114,12 +129,19 @@ def approx_value_iteration(sourcingEnv, initial_state,
                         if state_key in state_value_dic and np.random.uniform(0, 1, 1)[0] > explore_eps:
                             avg_value_estimate = state_value_dic[state_key][0]
                             # Update state visit
-                            state_value_dic[state_key]= (avg_value_estimate, state_value_dic[state_key][1] + 1)
+                            state_value_dic[state_key] = (avg_value_estimate, state_value_dic[state_key][1] + 1)
                         else:
                             # there is a explore_eps chance of state-value re-estimation, and value update
-                            value_estimates = mc_with_policy(sourcingEnvCopy, potential_state, big_s = big_s, small_s = small_s)
+                            if cache_value_est and state_key in cache_value_dic:
+                                value_estimates = cache_value_dic[state_key]
+                            elif cache_value_est and state_key not in cache_value_dic:
+                                value_estimates = mc_with_policy(sourcingEnvCopy, potential_state, big_s = big_s, small_s = small_s, policy_callback = ssn_policy)
+                                cache_value_dic[state_key] = value_estimates
+                            else:
+                                value_estimates = mc_with_policy(sourcingEnvCopy, potential_state, big_s = big_s, small_s = small_s, policy_callback = ssn_policy)
+                            
                             avg_value_estimate = -np.mean(value_estimates)
-
+                            
                             # value update on the MC explored states
                             if state_key not in state_value_dic:
                                 state_value_dic[state_key] = (avg_value_estimate, 1)
@@ -129,14 +151,18 @@ def approx_value_iteration(sourcingEnv, initial_state,
                                 state_value_dic[state_key] = (new_value_adap, state_value_dic[state_key][1] + 1)
                             
                             if debug_bool:
-                                print("episode: {ep}  | step: {st} | potential_state: {ps}| vdic size: {vdic}".format(ep = str(e), st = str(m), ps = str(potential_state), vdic = str(len(state_value_dic))))
+                                with open(debug_write_path, 'a') as file:
+                                    msg_write = "episode: {ep}  | step: {st} | potential_state: {ps}| vdic size: {vdic}".format(ep = str(e), st = str(m), ps = str(potential_state), vdic = str(len(state_value_dic)))
+                                    file.write(msg_write + "\n")
+                                # print("episode: {ep}  | step: {st} | potential_state: {ps}| vdic size: {vdic}".format(ep = str(e), st = str(m), ps = str(potential_state), vdic = str(len(state_value_dic))))
                             
                         # if np.random.uniform(0, 1, 1)[0] < explore_eps:
                         # else:
                         #     avg_value_estimate = np.mean(list(state_value_dic.values()))
 
                         future_value += reward_contribution + event_probs[i] * avg_value_estimate
-                    action_reward = -np.sum(np.multiply(sourcingEnv.procurement_cost_vec, pa))
+                fixed_costs = get_fixed_costs(possible_joint_actions[pa], fixed_costs_vec = sourcingEnv.fixed_costs)
+                action_reward = -np.sum(np.multiply(sourcingEnv.procurement_cost_vec, possible_joint_actions[pa])) - np.sum(fixed_costs)
 
                 value_array[pa] = action_reward + future_value
                 
@@ -177,16 +203,16 @@ def approx_value_iteration(sourcingEnv, initial_state,
             
             step_time = time.time() - step_start_time
             
-            debug_trans_msg = "############ [STATE INFO] next_state: {ns} | event: {ev}| sel. act: {sa}| sup index: {sind}".format(ns= str(next_state), ev = str(event), sa = str(selected_action), sind = str(supplier_index))
+            # debug_trans_msg = "############ [STATE INFO] next_state: {ns} | event: {ev}| sel. act: {sa}| sup index: {sind}".format(ns= str(next_state), ev = str(event), sa = str(selected_action), sind = str(supplier_index))
             debug_count_msg = "############ [STEP TIME] episode: {ep} | step: {st}| elapsed time: {time}".format(ep = str(e), time = str(step_time), st = str(m))
             
             with open(debug_write_path, 'a') as f:
                 f.write(trans_ac_type + "\n")
-                f.write(debug_trans_msg + "\n")
+                # f.write(debug_trans_msg + "\n")
                 f.write(debug_count_msg + "\n")
                 f.close()
 
-            print(debug_trans_msg)
+            # print(debug_trans_msg)
             print(debug_count_msg)
 
         # model save every save_interval intervals
@@ -198,6 +224,11 @@ def approx_value_iteration(sourcingEnv, initial_state,
         
         episode_run_time = time.time() - episode_start_time
         print("############ episode: {ep} | elapsed time: {time}".format(ep = str(e), time = str(episode_run_time) ))
+        if debug_bool:
+            with open(debug_write_path, 'a') as file:
+                file.write("############ episode: {ep} | elapsed time: {time}".format(ep = str(e), time = str(episode_run_time)))
+        else:
+            print("############ episode: {ep} | elapsed time: {time}".format(ep = str(e), time = str(episode_run_time) ))
     
     return {"state_value_dic": state_value_dic, "model_params": model_args_dic, "mdp_env": sourcingEnv}
 
@@ -231,3 +262,30 @@ def find_opt_ss_policy_via_mc(sourcingEnv,
                 print("new best value: " + str((best_small_s, best_big_s, best_val)))
     
     return best_small_s, best_big_s, best_val
+
+# SSN, best single sourcing newsvendor solution
+def ssn_policy(sourcingEnv, **kwargs):
+
+    s_custom = MState(stock_level = 0, 
+        n_suppliers = N_SUPPLIERS, 
+        n_backorders = np.array([0, 0]), 
+        flag_on_off = np.array([1, 1]))
+
+    opt_cost = np.Inf
+    order_vec = np.zeros(sourcingEnv.n_suppliers)
+    
+    for s in range(sourcingEnv.n_suppliers):
+        single_supplier_costs = mc_with_policy(sourcingEnv, start_state = s_custom, 
+            use_tqdm = False,
+            policy_callback = single_source_orderupto_policy,
+            **kwargs)
+        ssup_cost = np.min(single_supplier_costs)
+        if ssup_cost < opt_cost:
+            order_vec = np.zeros(sourcingEnv.n_suppliers)
+            # fast_sup_index = np.argmin(sourcingEnv.supplier_lead_times_vec)
+            order_amt = newsvendor_opt_order(sourcingEnv.procurement_cost_vec[s])
+            order_vec[s] = order_amt
+            # order_action = single_source_orderupto_policy(sourcingEnv, **kwargs)
+            # order_vec = order_action
+    
+    return order_vec

@@ -36,6 +36,7 @@ PROCUREMENT_COST_VEC = np.array(cfg['mdp_env_params']['procurement_cost_vec'])
 SUPPLIER_LEAD_TIMES_VEC = np.array(cfg['mdp_env_params']['supplier_lead_times_vec'])
 ON_TIMES = np.array(cfg['mdp_env_params']['on_times'])
 OFF_TIMES = np.array([np.Inf, np.Inf]) if cfg['mdp_env_params']['off_times'] == "no_disrup" else np.array(cfg['mdp_env_params']['off_times'])
+FIXED_COST_VEC = np.array(cfg['mdp_env_params']['fixed_costs'])
 
 # Evaluation Params
 SAFE_FACTOR = cfg['eval_params']['safe_factor'] if 'eval_params' in cfg and 'safe_factor' in cfg['eval_params'] else 1.0
@@ -50,3 +51,6 @@ DI_SF_FAC = cfg['dual_index']['di_safety_factor'] if 'dual_index' in cfg and 'di
 ##
 MODEL_ARGS_DIC = cfg
 
+MAX_INVEN_LP = cfg['lp_config']['max_inven_lp'] if 'lp_config' in cfg and 'max_inven_lp' in cfg['lp_config'] else 8
+BACKORDER_MAX_LP = cfg['lp_config']['backorder_max_lp'] if 'lp_config' in cfg and 'backorder_max_lp' in cfg['lp_config'] else -3
+ACTION_SIZE_LP = cfg['lp_config']['action_size_lp'] if 'lp_config' in cfg and 'action_size_lp' in cfg['lp_config'] else 4

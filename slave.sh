@@ -9,3 +9,4 @@
 # sbatch -e msrc_err.txt -o msrc_out.txt --nodes=1 --mem=15G slave.sh
 # sbatch -e msrc_err.txt -o msrc_out.txt slave.sh
 docker run -d --mount type=bind,source=/home/liul/docker/mount,target=/workspace/mount larkin/msource:latest /bin/sh -c "cd workspace/mount/multi-sourcing-inventory/; python main.py > output/run_output.txt"
+# docker run -d --mount type=bind,source=/home/liul/docker/mount,target=/workspace/mount larkin/msource:latest /bin/sh -c "cd workspace/mount/multi-sourcing-inventory/; python exp_lp_test.py > output/run_output.txt"

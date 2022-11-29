@@ -31,6 +31,14 @@ class MState():
         arr_rep = [int(self.s)] + [int(x) for x in self.n_backorders] + [int(x) for x in self.flag_on_off]
         return arr_rep
 
+    def get_nested_list(self):
+        arr_rep = [int(self.s), [int(x) for x in self.n_backorders], [int(x) for x in self.flag_on_off]]
+        return arr_rep
+
+    def get_nested_list_repr(self):
+        return repr(self.get_nested_list())
+
     def get_repr_key(self):
         return repr(self.get_list_repr())
+    
 

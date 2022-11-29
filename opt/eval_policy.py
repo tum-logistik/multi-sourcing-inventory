@@ -28,7 +28,6 @@ def eval_policy_from_value_dic(sourcingEnv,
     safe_factor = SAFE_FACTOR if "safe_factor" not in kwargs else kwargs["safe_factor"]
     sub_eval_periods = SUB_EVAL_PERIODS if "sub_eval_periods" not in kwargs else kwargs["sub_eval_periods"]
     sub_nested_mc_iter = SUB_NESTED_MC_ITER if "sub_nested_mc_iter" not in kwargs else kwargs["sub_nested_mc_iter"]
-
     value_dic = None if "value_dic" not in kwargs else kwargs["value_dic"]
     if value_dic == None:
         print("Error no value dic supplied!")
@@ -75,8 +74,13 @@ def eval_policy_from_value_dic(sourcingEnv,
                 
                 potential_next_cost = -cost_calc(potential_next_state, h_cost = h_cost, b_penalty = b_penalty)
                 state_key = potential_next_state.get_repr_key()
-
-                potential_immediate_cost = -np.sum(np.multiply(sourcingEnv.procurement_cost_vec, pa))
+                
+                if hasattr(sourcingEnv, 'fixed_costs)'):
+                    fixed_costs = get_fixed_costs(pa, fixed_costs_vec = sourcingEnv.fixed_costs)
+                else:
+                    fixed_costs = [0]*sourcingEnv.n_suppliers
+                
+                potential_immediate_cost = -np.sum(np.multiply(sourcingEnv.procurement_cost_vec, pa)) -np.sum(fixed_costs)
 
                 reward_contrib += event_probs[e] * (potential_next_cost + potential_immediate_cost)
                 if state_key in value_dic and value_dic[state_key][1] > n_visit_lim:
@@ -86,7 +90,8 @@ def eval_policy_from_value_dic(sourcingEnv,
                     sourcingEnvCopy.current_state = potential_next_state
                     eval_costs = mc_with_policy(sourcingEnvCopy,
                         periods = sub_eval_periods,
-                        nested_mc_iters = sub_nested_mc_iter)
+                        nested_mc_iters = sub_nested_mc_iter,
+                        policy_callback = ss_policy_fastest_supp_backlog)
                     potential_state_value = np.mean(eval_costs)
                 value_contrib += event_probs[e] * potential_state_value
             
@@ -116,19 +121,33 @@ def eval_policy_from_value_dic(sourcingEnv,
     # sourcingEnv.reset()
     return best_action
 
-def mc_eval_policy_perf(sourcingEnv, value_dic, 
-    max_steps = MAX_STEPS, 
-    mc_iters = MC_EPISODES,
-    discount_fac = DISCOUNT_FAC,
-    h_cost = H_COST, 
-    b_penalty = B_PENALTY,
-    policy_callback = eval_policy_from_value_dic):
 
-    mc_avg_costs = []
-    for mc in tqdm(range(mc_iters)):
-        cost, avg_cost = policy_callback(sourcingEnv, value_dic, max_steps, discount_fac = discount_fac, h_cost = h_cost, b_penalty = b_penalty)
-        mc_avg_costs.append(avg_cost)
-        # print("MC eval iter: " + str(mc))
+def lp_mdp_policy(sourcingEnv, **kwargs):
+
+    filename = None if "filename" not in kwargs else kwargs["filename"]
+    if filename == None:
+        print("No LP file detected!")
+        return False
+
+    filename_lp = "output/lp_sol_" + filename
+    with open(filename_lp, 'rb') as f:
+        lp_sol = pkl.load(f)
     
-    return mc_avg_costs
+    with open("output/" + filename, 'rb') as f:
+        output_obj = pkl.load(f)
+        
+    lp_strs = [x[0] for x in lp_sol]
+    lp_strs_tups = [(x.split("..")[1], x.split("..")[2]) for x in lp_strs]
+    lp_tups = [(x[0], [int(s) for s in re.findall(r'\d+', x[1])] ) for x in lp_strs_tups]
 
+    lp_dic = dict(lp_tups)
+
+    state_key = sourcingEnv.current_state.get_nested_list_repr()
+
+    if state_key in lp_dic and np.sum(lp_dic[state_key]) != 0:
+        order_vec = np.array(lp_dic[state_key])
+        return order_vec
+    else:
+        order_vec = eval_policy_from_value_dic(sourcingEnv, **kwargs)
+
+    return order_vec

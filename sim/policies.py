@@ -27,7 +27,7 @@ def ss_policy_fastest_supp_backlog(sourcingEnv, **kwargs):
     big_s = BIG_S if "big_s" not in kwargs else kwargs["big_s"]
     
     ss_pol_suggest = ss_policy(sourcingEnv.current_state.s, small_s = small_s, big_s = big_s) 
-    total_order_amount = np.clip(ss_pol_suggest- np.sum(sourcingEnv.current_state.n_backorders), 0, big_s)
+    total_order_amount = np.clip(ss_pol_suggest - np.sum(sourcingEnv.current_state.n_backorders), 0, big_s)
     
     avail_mu_lt_prod = sourcingEnv.mu_lt_rate * sourcingEnv.current_state.flag_on_off
     supp_index = np.argmax(avail_mu_lt_prod)
@@ -267,19 +267,22 @@ def mc_episode_with_policy(sourcingEnv,
         policy_action = policy(sourcingEnv, **kwargs)
         next_state, event, event_index, probs, supplier_index = sourcingEnv.step(policy_action)
         cost = cost_calc(next_state, h_cost = h_cost, b_penalty = b_penalty)
-        
+
         if hasattr(sourcingEnv, 'fixed_costs)'):
             fixed_costs = get_fixed_costs(policy_action, fixed_costs_vec = sourcingEnv.fixed_costs)
         else:
             fixed_costs = [0]*sourcingEnv.n_suppliers
         
-        total_procurement_cost = np.sum(np.multiply(policy_action, sourcingEnv.procurement_cost_vec)) + np.sum(fixed_costs)
+        procurement_cost_if_avail = np.multiply(policy_action, sourcingEnv.procurement_cost_vec)
+        procurement_cost = np.sum(np.multiply(procurement_cost_if_avail, sourcingEnv.current_state.flag_on_off))
+
+        total_procurement_cost = procurement_cost + np.sum(fixed_costs)
         total_cost = cost + total_procurement_cost
         total_costs.append(total_cost)
 
     avg_cost_per_period = np.mean(total_costs)
 
-    return np.sum(total_costs), avg_cost_per_period
+    return total_costs, avg_cost_per_period
 
 def mc_with_policy(sourcingEnv, 
     start_state = False,

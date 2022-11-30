@@ -149,22 +149,6 @@ def myopic1_policy(sourcingEnv, **kwargs):
     
     return myopic_order
 
-def myopic1_policy(sourcingEnv, **kwargs):
-
-    max_order = MAX_INVEN if "max_order" not in kwargs else kwargs["max_order"]
-
-    possible_joint_actions = get_combo(int(max_order), sourcingEnv.n_suppliers)
-    myopic_order = np.zeros(sourcingEnv.n_suppliers)
-
-    cost = np.Inf
-    for a in possible_joint_actions:
-        cand_cost = cost_calc_expected_di(sourcingEnv, a)
-        if cand_cost < cost:
-            myopic_order = a
-            cost = cand_cost
-    
-    return myopic_order
-
 def myopic2_policy(sourcingEnv, **kwargs):
 
     max_order = BIG_S if "max_order" not in kwargs else kwargs["max_order"]
@@ -176,13 +160,13 @@ def myopic2_policy(sourcingEnv, **kwargs):
     for a in possible_joint_actions:
         cand_cost = cost_calc_expected_di(sourcingEnv, a)
         sourcingEnvGhost = copy.deepcopy(sourcingEnv)
-        for event in [Event.DEMAND_ARRIVAL, Event.SUPPLY_ARRIVAL, Event.SUPPLIER_OFF]:
-            for supplier in [0, 1]:
-                _, _, i, event_probs, _ = sourcingEnvGhost.step(a, (event, supplier))
-                prob_event = event_probs[i]
-                for a2 in possible_joint_actions:
-                    stage2_cost = prob_event*cost_calc_expected_di(sourcingEnvGhost, a2)
-                    cand_cost += stage2_cost
+        for event in [(Event.DEMAND_ARRIVAL, None), (Event.SUPPLY_ARRIVAL, 0), (Event.SUPPLY_ARRIVAL, 1), (Event.SUPPLIER_OFF, 0), (Event.SUPPLIER_OFF, 1) ]:
+            supplier = event[1]
+            _, _, i, event_probs, _ = sourcingEnvGhost.step(a, (event[0], supplier))
+            prob_event = event_probs[i]
+            for a2 in possible_joint_actions:
+                stage2_cost = prob_event*cost_calc_expected_di(sourcingEnvGhost, a2)
+                cand_cost += stage2_cost
         
         if cand_cost < cost:
             myopic_order = a
@@ -287,7 +271,7 @@ def mc_episode_with_policy(sourcingEnv,
         next_state, event, event_index, probs, supplier_index = sourcingEnv.step(policy_action)
         tau_sum += sourcingEnv.current_state.state_tau
 
-    avg_cost_per_period = np.sum(total_costs)/tau_sum
+    avg_cost_per_period = np.sum(total_costs)/len(total_costs)
 
     return total_costs, avg_cost_per_period
 

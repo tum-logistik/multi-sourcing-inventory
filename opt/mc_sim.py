@@ -9,63 +9,6 @@ from datetime import datetime
 import pickle
 from tqdm import tqdm
 
-def mc_episode_with_policy(sourcingEnv, 
-    policy = myopic2_policy, 
-    **kwargs):
-
-    b_penalty = B_PENALTY if "b_penalty" not in kwargs else kwargs["b_penalty"]
-    h_cost = H_COST if "h_cost" not in kwargs else kwargs["h_cost"]
-    periods = PERIODS if "periods" not in kwargs else kwargs["periods"]
-    
-    sourcingEnv.reset()
-
-    cost = cost_calc(sourcingEnv.current_state, h_cost = h_cost, b_penalty = b_penalty)
-    total_costs = [cost]
-    for i in range(periods):
-        
-        policy_action = policy(sourcingEnv, **kwargs)
-        next_state, event, event_index, probs, supplier_index = sourcingEnv.step(policy_action)
-        cost = cost_calc(next_state, h_cost = h_cost, b_penalty = b_penalty)
-        
-        if hasattr(sourcingEnv, 'fixed_costs)'):
-            fixed_costs = get_fixed_costs(policy_action, fixed_costs_vec = sourcingEnv.fixed_costs)
-        else:
-            fixed_costs = [0]*sourcingEnv.n_suppliers
-        
-        procurement_cost_if_avail = np.multiply(policy_action, sourcingEnv.procurement_cost_vec)
-        procurement_cost = np.sum(np.multiply(procurement_cost_if_avail, sourcingEnv.current_state.flag_on_off))
-
-        total_procurement_cost = procurement_cost + np.sum(fixed_costs)
-        total_cost = cost + total_procurement_cost
-        total_costs.append(total_cost)
-
-    avg_cost_per_period = np.mean(total_costs)
-
-    return total_costs, avg_cost_per_period
-
-def mc_with_policy(sourcingEnv, 
-    start_state = False,
-    policy_callback = myopic2_policy, 
-    nested_mc_iters = NESTED_MC_ITERS,
-    use_tqdm = False,
-    **kwargs):
-    
-    mc_avg_costs = []
-
-    for i in tqdm(range(nested_mc_iters)) if use_tqdm else range(nested_mc_iters):
-        if start_state != False:
-            sourcingEnv.current_state = start_state
-
-        start_time = time.time()
-        _, avg_cost = mc_episode_with_policy(sourcingEnv, policy = policy_callback, **kwargs)
-        mc_avg_costs.append(avg_cost)
-        run_time = time.time() - start_time
-        # if i % 100 == 0:
-        #     print("time per 100 iter: " + str(run_time))
-    
-    return mc_avg_costs
-
-
 def approx_value_iteration(sourcingEnv, initial_state, 
     max_steps = MAX_STEPS, 
     num_episodes = MC_EPISODES,

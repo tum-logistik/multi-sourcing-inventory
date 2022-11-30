@@ -232,7 +232,9 @@ class SourcingEnv():
             assert supplier_index > -1, "Assertion Failed: supplier_index < 0"
         else:
             assert event in [Event.DEMAND_ARRIVAL, Event.NO_EVENT], "AssertAssertion Failed: Unknown event."
-
+        
+        tau_event = self.compute_event_arrival_time(order_quantity_vec)
+        next_state.state_tau = tau_event
         self.current_state = next_state
         
         return next_state, event, i, event_probs, supplier_index

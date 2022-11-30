@@ -12,8 +12,8 @@ if __name__ == '__main__':
     print("#### Running Debug Scenario #####")
     filename = "output/msource_value_dic_07-04-2022-05-59-13.pkl"
 
-with open(filename, 'rb') as f:
-    output_obj = pkl.load(f)
+    with open(filename, 'rb') as f:
+        output_obj = pkl.load(f)
 
     value_dic = output_obj["state_value_dic"]
     model_params = output_obj["model_params"]
@@ -21,7 +21,8 @@ with open(filename, 'rb') as f:
 
     sourcingEnv2 = SourcingEnv(
         lambda_arrival = model_params['mdp_env_params']['lambda'], # or 10
-        procurement_cost_vec = np.array(model_params['mdp_env_params']['procurement_cost_vec']),
+        # procurement_cost_vec = np.array(model_params['mdp_env_params']['procurement_cost_vec']),
+        procurement_cost_vec = PROCUREMENT_COST_VEC,
         supplier_lead_times_vec = np.array(model_params['mdp_env_params']['supplier_lead_times_vec']),
         fixed_costs = np.array(model_params['mdp_env_params']['fixed_costs']) if 'fixed_costs' in model_params['mdp_env_params'] else FIXED_COST_VEC,
         on_times = np.array([1, 1]), 
@@ -52,6 +53,32 @@ with open(filename, 'rb') as f:
         "max_stock": 2,
         "approx_eval": True
     }
+
+    # single_supplier_mean_costs = []
+    # for s in range(sourcingEnv2.n_suppliers):
+
+    #     kwargs = {"periods" : 30,
+    #         "nested_mc_iters" : 30,
+    #         "h_cost": model_params['policy_params']['h_cost'],
+    #         "b_penalty" : model_params['policy_params']['b_penalty'],
+    #         "supplier_index": s
+    #     }
+
+    #     single_supplier_costs = mc_with_policy(sourcingEnv2, start_state = s_custom, 
+    #         use_tqdm = True,
+    #         policy_callback = single_source_orderupto_policy,
+    #         **kwargs)
+        
+    #     single_supplier_mean_costs.append(np.mean(single_supplier_costs))
+
+    # print(single_supplier_mean_costs)
+    # print(np.min(single_supplier_mean_costs))
+
+    mc_avg_costs = mc_with_policy(sourcingEnv2, 
+        start_state = s_custom, 
+        use_tqdm = True,
+        policy_callback = myopic2_policy,
+        **kwargs)
 
     mc_avg_costs = mc_with_policy(sourcingEnv2, 
         start_state = s_custom, 
@@ -104,7 +131,7 @@ with open(filename, 'rb') as f:
     
     eval_steps = 50
     mc_eval_iter = 3
-    mc_eval_policy_perf(sourcingEnv, value_dic, 
+    mc_with_policy(sourcingEnv, value_dic, 
         max_steps = eval_steps, mc_iters = mc_eval_iter)
     
     history = []

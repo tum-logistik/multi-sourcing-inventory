@@ -176,10 +176,13 @@ def myopic2_policy(sourcingEnv, **kwargs):
     for a in possible_joint_actions:
         cand_cost = cost_calc_expected_di(sourcingEnv, a)
         sourcingEnvGhost = copy.deepcopy(sourcingEnv)
-        sourcingEnvGhost.step(a)
-        for a2 in possible_joint_actions:
-            stage2_cost = cost_calc_expected_di(sourcingEnvGhost, a2)
-            cand_cost += stage2_cost
+        for event in [Event.DEMAND_ARRIVAL, Event.SUPPLY_ARRIVAL, Event.SUPPLIER_OFF]:
+            for supplier in [0, 1]:
+                _, _, i, event_probs, _ = sourcingEnvGhost.step(a, (event, supplier))
+                prob_event = event_probs[i]
+                for a2 in possible_joint_actions:
+                    stage2_cost = prob_event*cost_calc_expected_di(sourcingEnvGhost, a2)
+                    cand_cost += stage2_cost
         
         if cand_cost < cost:
             myopic_order = a
@@ -262,11 +265,12 @@ def mc_episode_with_policy(sourcingEnv,
 
     cost = cost_calc(sourcingEnv.current_state, h_cost = h_cost, b_penalty = b_penalty)
     total_costs = [cost]
+    tau_sum = 0.0
     for i in range(periods):
         
         policy_action = policy(sourcingEnv, **kwargs)
-        next_state, event, event_index, probs, supplier_index = sourcingEnv.step(policy_action)
-        cost = cost_calc(next_state, h_cost = h_cost, b_penalty = b_penalty)
+        
+        cost = cost_calc(sourcingEnv.current_state, h_cost = h_cost, b_penalty = b_penalty)
 
         if hasattr(sourcingEnv, 'fixed_costs)'):
             fixed_costs = get_fixed_costs(policy_action, fixed_costs_vec = sourcingEnv.fixed_costs)
@@ -280,7 +284,10 @@ def mc_episode_with_policy(sourcingEnv,
         total_cost = cost + total_procurement_cost
         total_costs.append(total_cost)
 
-    avg_cost_per_period = np.mean(total_costs)
+        next_state, event, event_index, probs, supplier_index = sourcingEnv.step(policy_action)
+        tau_sum += sourcingEnv.current_state.state_tau
+
+    avg_cost_per_period = np.sum(total_costs)/tau_sum
 
     return total_costs, avg_cost_per_period
 

@@ -4,7 +4,7 @@ from common.variables import *
 # simulation functions
 
 def cost_calc(state, h_cost = H_COST, b_penalty = B_PENALTY):
-    cost = state.s * h_cost if state.s > 0 else np.abs(state.s * b_penalty)
+    cost = state.s * h_cost * state.state_tau if state.s > 0 else np.abs(state.s * b_penalty * state.state_tau)
     return cost
 
 def cost_calc_expected_di(sourcingEnv, order_quantity_vec, custom_state = None, h_cost = H_COST, b_penalty = B_PENALTY):
@@ -21,14 +21,12 @@ def cost_calc_expected_di(sourcingEnv, order_quantity_vec, custom_state = None, 
         fixed_costs = get_fixed_costs(order_quantity_vec, fixed_costs_vec = sourcingEnv.fixed_costs)
     else:
         fixed_costs = [0]*sourcingEnv.n_suppliers
-
-    
     
     total_proc_costs = np.sum(np.multiply(procurement_costs_avail, order_quantity_vec)) + np.sum(fixed_costs)
 
-    exp_demand_cost = event_probs[0] * (current_cost - h_cost if custom_state.s - 1 >= 0  else current_cost + b_penalty)
-    exp_hold_cost_0 = event_probs[1] * current_cost * h_cost * order_quantity_vec[0]
-    exp_hold_cost_1 = event_probs[2] * current_cost * h_cost * order_quantity_vec[1]
+    exp_demand_cost = event_probs[0] * (current_cost - h_cost * sourcingEnv.current_state.state_tau if custom_state.s - 1 >= 0  else current_cost + b_penalty)
+    exp_hold_cost_0 = event_probs[1] * current_cost * h_cost * sourcingEnv.current_state.state_tau * order_quantity_vec[0]
+    exp_hold_cost_1 = event_probs[2] * current_cost * h_cost * sourcingEnv.current_state.state_tau * order_quantity_vec[1]
     exp_other_costs = (1 - np.sum(event_probs[0:3])) * current_cost
 
     exp_total_cost = total_proc_costs + exp_demand_cost + exp_hold_cost_0 + exp_hold_cost_1 + exp_other_costs

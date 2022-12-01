@@ -9,7 +9,8 @@ from tqdm import tqdm
 
 
 def eval_policy_from_value_dic(sourcingEnv, 
-        policy = ss_policy_fastest_supp_backlog, 
+        # default_policy = ss_policy_fastest_supp_backlog, 
+        default_policy = ssn_policy, 
         **kwargs
     ):
 
@@ -17,12 +18,14 @@ def eval_policy_from_value_dic(sourcingEnv,
     #     sub_nested_mc_iter = SUB_NESTED_MC_ITER
 
     max_stock = BIG_S if "max_stock" not in kwargs else kwargs["max_stock"]
+    big_s = BIG_S if "big_s" not in kwargs else kwargs["big_s"]
+    small_s = SMALL_S if "small_s" not in kwargs else kwargs["small_s"]
     periods = PERIODS if "periods_val_it" not in kwargs else kwargs["periods_val_it"]
 
     b_penalty = B_PENALTY if "b_penalty" not in kwargs else kwargs["b_penalty"]
     h_cost = H_COST if "h_cost" not in kwargs else kwargs["h_cost"]
     
-    default_ss_policy = ss_policy_fastest_supp_backlog if "default_ss_policy" not in kwargs else kwargs["default_ss_policy"]
+    default_ss_policy = default_policy if "default_ss_policy" not in kwargs else kwargs["default_ss_policy"]
     n_visit_lim = N_VISIT_LIM if "n_visit_lim" not in kwargs else kwargs["n_visit_lim"]
     discount_fac = DISCOUNT_FAC if "discount_fac" not in kwargs else kwargs["discount_fac"]
     safe_factor = SAFE_FACTOR if "safe_factor" not in kwargs else kwargs["safe_factor"]
@@ -48,7 +51,9 @@ def eval_policy_from_value_dic(sourcingEnv,
         best_action = np.zeros(sourcingEnv.n_suppliers) # order nothing is the supposed best action
 
         ss_action = default_ss_policy(sourcingEnv)
+
         q_value_ss = None
+
 
         for pa in possible_joint_actions:
             event_probs = sourcingEnv.get_event_probs(pa)
@@ -85,14 +90,13 @@ def eval_policy_from_value_dic(sourcingEnv,
                 reward_contrib += event_probs[e] * (potential_next_cost + potential_immediate_cost)
                 
                 if state_key in value_dic and value_dic[state_key][1] > n_visit_lim:
-                        potential_state_value = value_dic[state_key][0]
+                    potential_state_value = value_dic[state_key][0]
                 else:
                     sourcingEnvCopy = copy.deepcopy(sourcingEnv)
                     sourcingEnvCopy.current_state = potential_next_state
-                    eval_costs = mc_with_policy(sourcingEnvCopy,
-                        periods = sub_eval_periods,
-                        nested_mc_iters = sub_nested_mc_iter,
-                        policy_callback = default_ss_policy)
+                    eval_costs = optimistic_lowest_cost_func(sourcingEnvCopy, potential_next_state, big_s, small_s)
+                    # eval_costs = eval_costs_ss
+                    
                     potential_state_value = np.mean(eval_costs)
                 value_contrib += event_probs[e] * potential_state_value
             

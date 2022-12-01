@@ -37,22 +37,27 @@ if __name__ == '__main__':
         flag_on_off = np.array([1, 1]))
 
     kwargs = {
-        "value_dic": value_dic, 
-        "periods": 20, 
-        "periods_val_it": 2,
-        "nested_mc_iters": 2,
-        "max_stock": BIG_S,
-        "discount_fac": DISCOUNT_FAC,
-        "h_cost": model_params['policy_params']['h_cost'],
-        "b_penalty": model_params['policy_params']['b_penalty'],
-        "n_visit_lim": N_VISIT_LIM,
-        "default_ss_policy": ss_policy_fastest_supp_backlog,
-        "safe_factor": SAFE_FACTOR,
-        "sub_eval_periods": SUB_EVAL_PERIODS,
-        "sub_nested_mc_iter": SUB_NESTED_MC_ITER,
-        "max_stock": 2,
-        "approx_eval": True
-    }
+    "value_dic": value_dic, 
+    "periods": 6, 
+    "periods_val_it": 6,
+    "nested_mc_iters": 4,
+    "max_stock": 2,
+    "discount_fac": DISCOUNT_FAC,
+    "h_cost": model_params['policy_params']['h_cost'],
+    "b_penalty": model_params['policy_params']['b_penalty'],
+    "n_visit_lim": N_VISIT_LIM,
+    "default_ss_policy": ss_policy_fastest_supp_backlog,
+    "safe_factor": 1.1, #SAFE_FACTOR,
+    "sub_eval_periods": SUB_EVAL_PERIODS,
+    "sub_nested_mc_iter": SUB_NESTED_MC_ITER,
+    "approx_eval": True
+}
+
+    mc_avg_costs = mc_with_policy(sourcingEnv2, 
+        start_state = s_custom, 
+        use_tqdm = False,
+        policy_callback = eval_policy_from_value_dic,
+        **kwargs)
 
     # single_supplier_mean_costs = []
     # for s in range(sourcingEnv2.n_suppliers):

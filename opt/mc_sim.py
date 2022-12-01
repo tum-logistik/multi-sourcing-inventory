@@ -78,10 +78,10 @@ def approx_value_iteration(sourcingEnv, initial_state,
                             if cache_value_est and state_key in cache_value_dic:
                                 value_estimates = cache_value_dic[state_key]
                             elif cache_value_est and state_key not in cache_value_dic:
-                                value_estimates = mc_with_policy(sourcingEnvCopy, potential_state, big_s = big_s, small_s = small_s, policy_callback = ss_policy_fastest_supp_backlog)
+                                value_estimates = optimistic_lowest_cost_func(sourcingEnv, potential_state, big_s, small_s)
                                 cache_value_dic[state_key] = value_estimates
                             else:
-                                value_estimates = mc_with_policy(sourcingEnvCopy, potential_state, big_s = big_s, small_s = small_s, policy_callback = ss_policy_fastest_supp_backlog)
+                                value_estimates = optimistic_lowest_cost_func(sourcingEnv, potential_state, big_s, small_s)
                             
                             avg_value_estimate = -np.mean(value_estimates)
                             
@@ -175,6 +175,13 @@ def approx_value_iteration(sourcingEnv, initial_state,
     
     return {"state_value_dic": state_value_dic, "model_params": model_args_dic, "mdp_env": sourcingEnv}
 
+
+def optimistic_lowest_cost_func(sourcingEnv, potential_state, big_s, small_s):
+    eval_costs_ss = mc_with_policy(sourcingEnv, potential_state, big_s = big_s, small_s = small_s, policy_callback = ss_policy_fastest_supp_backlog)
+    eval_costs_s0 = mc_with_policy(sourcingEnv, potential_state, big_s = big_s, small_s = small_s, policy_callback = single_source_orderupto_policy, supplier_index = 0)
+    eval_costs_s1 = mc_with_policy(sourcingEnv, potential_state, big_s = big_s, small_s = small_s, policy_callback = single_source_orderupto_policy, supplier_index = 1)
+    value_estimates = np.min([eval_costs_ss, eval_costs_s0, eval_costs_s1])
+    return value_estimates
 
 def find_opt_ss_policy_via_mc(sourcingEnv, 
     periods = PERIODS,

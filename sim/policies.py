@@ -257,7 +257,7 @@ def mc_episode_with_policy(sourcingEnv,
         
         cost = cost_calc(sourcingEnv.current_state, h_cost = h_cost, b_penalty = b_penalty)
 
-        if hasattr(sourcingEnv, 'fixed_costs)'):
+        if hasattr(sourcingEnv, 'fixed_costs'):
             fixed_costs = get_fixed_costs(policy_action, fixed_costs_vec = sourcingEnv.fixed_costs)
         else:
             fixed_costs = [0]*sourcingEnv.n_suppliers
@@ -271,7 +271,7 @@ def mc_episode_with_policy(sourcingEnv,
 
         next_state, event, event_index, probs, supplier_index = sourcingEnv.step(policy_action)
         tau_sum += sourcingEnv.current_state.state_tau
-        event_tracker.append([event, event_index, policy_action])
+        event_tracker.append([event, event_index, policy_action, next_state.s, next_state.n_backorders])
 
     avg_cost_per_period = np.sum(total_costs)/tau_sum # len(total_costs)
 

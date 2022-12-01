@@ -131,6 +131,7 @@ if __name__ == '__main__':
     
     eval_steps = 50
     mc_eval_iter = 3
+        
     mc_with_policy(sourcingEnv, value_dic, 
         max_steps = eval_steps, mc_iters = mc_eval_iter)
     

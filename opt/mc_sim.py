@@ -78,10 +78,10 @@ def approx_value_iteration(sourcingEnv, initial_state,
                             if cache_value_est and state_key in cache_value_dic:
                                 value_estimates = cache_value_dic[state_key]
                             elif cache_value_est and state_key not in cache_value_dic:
-                                value_estimates = mc_with_policy(sourcingEnvCopy, potential_state, big_s = big_s, small_s = small_s, policy_callback = ssn_policy)
+                                value_estimates = mc_with_policy(sourcingEnvCopy, potential_state, big_s = big_s, small_s = small_s, policy_callback = ss_policy_fastest_supp_backlog)
                                 cache_value_dic[state_key] = value_estimates
                             else:
-                                value_estimates = mc_with_policy(sourcingEnvCopy, potential_state, big_s = big_s, small_s = small_s, policy_callback = ssn_policy)
+                                value_estimates = mc_with_policy(sourcingEnvCopy, potential_state, big_s = big_s, small_s = small_s, policy_callback = ss_policy_fastest_supp_backlog)
                             
                             avg_value_estimate = -np.mean(value_estimates)
                             

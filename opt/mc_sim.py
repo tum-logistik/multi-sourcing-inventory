@@ -78,10 +78,10 @@ def approx_value_iteration(sourcingEnv, initial_state,
                             if cache_value_est and state_key in cache_value_dic:
                                 value_estimates = cache_value_dic[state_key]
                             elif cache_value_est and state_key not in cache_value_dic:
-                                value_estimates = optimistic_lowest_cost_func(sourcingEnv, potential_state, big_s, small_s)
+                                value_estimates = optimistic_lowest_cost_func(sourcingEnvCopy, potential_state, big_s, small_s)
                                 cache_value_dic[state_key] = value_estimates
                             else:
-                                value_estimates = optimistic_lowest_cost_func(sourcingEnv, potential_state, big_s, small_s)
+                                value_estimates = optimistic_lowest_cost_func(sourcingEnvCopy, potential_state, big_s, small_s)
                             
                             avg_value_estimate = -np.mean(value_estimates)
                             

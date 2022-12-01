@@ -247,8 +247,9 @@ def mc_episode_with_policy(sourcingEnv,
     
     sourcingEnv.reset()
 
-    cost = cost_calc(sourcingEnv.current_state, h_cost = h_cost, b_penalty = b_penalty)
-    total_costs = [cost]
+    # cost = cost_calc(sourcingEnv.current_state, h_cost = h_cost, b_penalty = b_penalty)
+    total_costs = []
+    event_tracker = []
     tau_sum = 0.0
     for i in range(periods):
         
@@ -270,8 +271,9 @@ def mc_episode_with_policy(sourcingEnv,
 
         next_state, event, event_index, probs, supplier_index = sourcingEnv.step(policy_action)
         tau_sum += sourcingEnv.current_state.state_tau
+        event_tracker.append([event, event_index, policy_action])
 
-    avg_cost_per_period = np.sum(total_costs)/len(total_costs)
+    avg_cost_per_period = np.sum(total_costs)/tau_sum # len(total_costs)
 
     return total_costs, avg_cost_per_period
 

@@ -74,7 +74,9 @@ if __name__ == '__main__':
     # print(single_supplier_mean_costs)
     # print(np.min(single_supplier_mean_costs))
 
-    
+    # sourcingEnv2.lambda_arrival = 50
+    # sourcingEnv2.supplier_lead_times_vec = np.array([0.008, 0.04])
+    # sourcingEnv2.mu_lt_rate = np.array([1/0.008, 1/0.04])
 
     mc_avg_costs = mc_with_policy(sourcingEnv2, 
         start_state = s_custom, 
@@ -119,6 +121,8 @@ if __name__ == '__main__':
 
     value_dic = output_obj["state_value_dic"]
     model_params = output_obj["model_params"]
+
+    
 
     mc_avg_costs = mc_with_policy(sourcingEnv, 
         periods = 30,

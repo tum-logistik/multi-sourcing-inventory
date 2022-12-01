@@ -244,6 +244,7 @@ def mc_episode_with_policy(sourcingEnv,
     b_penalty = B_PENALTY if "b_penalty" not in kwargs else kwargs["b_penalty"]
     h_cost = H_COST if "h_cost" not in kwargs else kwargs["h_cost"]
     periods = PERIODS if "periods" not in kwargs else kwargs["periods"]
+    norm_m_flag = True if "norm_m_flag" not in kwargs else kwargs["norm_m_flag"]
     
     sourcingEnv.reset()
 
@@ -273,7 +274,7 @@ def mc_episode_with_policy(sourcingEnv,
         tau_sum += sourcingEnv.current_state.state_tau
         event_tracker.append([event, event_index, policy_action, next_state.s, next_state.n_backorders])
 
-    avg_cost_per_period = np.sum(total_costs)/tau_sum # len(total_costs)
+    avg_cost_per_period = np.sum(total_costs)/tau_sum if not norm_m_flag else np.sum(total_costs)/len(total_costs)
 
     return total_costs, avg_cost_per_period
 

@@ -74,16 +74,18 @@ if __name__ == '__main__':
     # print(single_supplier_mean_costs)
     # print(np.min(single_supplier_mean_costs))
 
-    mc_avg_costs = mc_with_policy(sourcingEnv2, 
-        start_state = s_custom, 
-        use_tqdm = True,
-        policy_callback = myopic2_policy,
-        **kwargs)
+    
 
     mc_avg_costs = mc_with_policy(sourcingEnv2, 
         start_state = s_custom, 
         use_tqdm = True,
         policy_callback = eval_policy_from_value_dic,
+        **kwargs)
+    
+    mc_avg_costs = mc_with_policy(sourcingEnv2, 
+        start_state = s_custom, 
+        use_tqdm = True,
+        policy_callback = myopic2_policy,
         **kwargs)
 
     mc_avg_costs_di = mc_with_policy(sourcingEnv2, start_state = s_custom, 

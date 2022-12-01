@@ -83,6 +83,7 @@ def eval_policy_from_value_dic(sourcingEnv,
                 potential_immediate_cost = -np.sum(np.multiply(sourcingEnv.procurement_cost_vec, pa)) -np.sum(fixed_costs)
 
                 reward_contrib += event_probs[e] * (potential_next_cost + potential_immediate_cost)
+                
                 if state_key in value_dic and value_dic[state_key][1] > n_visit_lim:
                         potential_state_value = value_dic[state_key][0]
                 else:
@@ -91,7 +92,7 @@ def eval_policy_from_value_dic(sourcingEnv,
                     eval_costs = mc_with_policy(sourcingEnvCopy,
                         periods = sub_eval_periods,
                         nested_mc_iters = sub_nested_mc_iter,
-                        policy_callback = ss_policy_fastest_supp_backlog)
+                        policy_callback = default_ss_policy)
                     potential_state_value = np.mean(eval_costs)
                 value_contrib += event_probs[e] * potential_state_value
             

@@ -10,7 +10,7 @@ from opt.eval_policy import *
 if __name__ == '__main__':
 
     print("#### Running Debug Scenario #####")
-    filename = "output/msource_value_dic_12-01-2022-13-35-10.pkl"
+    filename = "output/msource_value_dic_12-01-2022-15-38-43.pkl"
 
     with open(filename, 'rb') as f:
         output_obj = pkl.load(f)
@@ -52,12 +52,13 @@ if __name__ == '__main__':
         "approx_eval": True
     }
 
-    sourcingEnv2.lambda_arrival = 50
+    # sourcingEnv2.lambda_arrival = 5
     # sourcingEnv2.mu_lt_rate = np.array([12.5, 5.5])
     mc_avg_costs = mc_with_policy(sourcingEnv2, 
         start_state = s_custom, 
         use_tqdm = False,
-        policy_callback = dummy_explore_policy,
+        policy_callback = single_source_orderupto_policy,
+        supplier_index = 1,
         **kwargs
     )
 

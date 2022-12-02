@@ -180,7 +180,7 @@ def optimistic_lowest_cost_func(sourcingEnv, potential_state, big_s, small_s):
     eval_costs_ss = mc_with_policy(sourcingEnv, potential_state, big_s = big_s, small_s = small_s, policy_callback = ss_policy_fastest_supp_backlog)
     eval_costs_s0 = mc_with_policy(sourcingEnv, potential_state, big_s = big_s, small_s = small_s, policy_callback = single_source_orderupto_policy, supplier_index = 0)
     eval_costs_s1 = mc_with_policy(sourcingEnv, potential_state, big_s = big_s, small_s = small_s, policy_callback = single_source_orderupto_policy, supplier_index = 1)
-    value_estimates = np.min([eval_costs_ss, eval_costs_s0, eval_costs_s1])
+    value_estimates = np.min([np.mean(eval_costs_ss), np.mean(eval_costs_s0), np.mean(eval_costs_s1)])
     return value_estimates
 
 def find_opt_ss_policy_via_mc(sourcingEnv, 
@@ -188,7 +188,7 @@ def find_opt_ss_policy_via_mc(sourcingEnv,
     nested_mc_iters = NESTED_MC_ITERS,
     h_cost = H_COST,
     b_penalty = B_PENALTY,
-    max_S = MAX_INVEN):
+    max_S = BIG_S):
 
     best_val = -np.Inf
     best_small_s = 0

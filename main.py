@@ -38,11 +38,11 @@ if __name__ == '__main__':
 
     print ("Finding sS* policy")
     best_small_s, best_big_s, best_val = find_opt_ss_policy_via_mc(sourcingEnv,
-        periods = 3,
-        nested_mc_iters = 4,
+        periods = 30,
+        nested_mc_iters = 100,
         h_cost = H_COST,
         b_penalty = B_PENALTY,
-        max_S = 3)
+        max_S = BIG_S)
 
     print("sS* policy: " + str((best_small_s, best_big_s, best_val)))
     output_dic = approx_value_iteration(sourcingEnv, s_initial, big_s = best_big_s, small_s = best_small_s)

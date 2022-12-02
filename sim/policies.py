@@ -272,9 +272,21 @@ def mc_episode_with_policy(sourcingEnv,
 
         next_state, event, event_index, probs, supplier_index = sourcingEnv.step(policy_action)
         tau_sum += sourcingEnv.current_state.state_tau
-        event_tracker.append([event, event_index, policy_action, next_state.s, next_state.n_backorders])
+        event_tracker.append([event, event_index, policy_action, next_state.get_nested_list_repr() ])
+
+        # Print diagnostic
+        count_demand = sum(map(lambda x : x[0] == Event.DEMAND_ARRIVAL, event_tracker))
+        count_supply_0 = sum(map(lambda x : x[0] == Event.SUPPLY_ARRIVAL and x[1] == 1, event_tracker))
+        count_supply_1 = sum(map(lambda x : x[0] == Event.SUPPLY_ARRIVAL and x[1] == 2, event_tracker))
+        count_on_0 = sum(map(lambda x : x[0] == Event.SUPPLIER_ON and x[1] == 3, event_tracker))
+        count_on_1 = sum(map(lambda x : x[0] == Event.SUPPLIER_ON and x[1] == 4, event_tracker))
+        count_off_0 = sum(map(lambda x : x[0] == Event.SUPPLIER_OFF and x[1] == 5, event_tracker))
+        count_off_1 = sum(map(lambda x : x[0] == Event.SUPPLIER_OFF and x[1] == 6, event_tracker))
 
     avg_cost_per_period = np.sum(total_costs)/tau_sum if not norm_m_flag else np.sum(total_costs)/len(total_costs)
+
+
+
 
     return total_costs, avg_cost_per_period
 
@@ -301,3 +313,5 @@ def mc_with_policy(sourcingEnv,
     return mc_avg_costs
 
 
+def dummy_explore_policy(state, **kwargs):
+    return np.array([2, 1])

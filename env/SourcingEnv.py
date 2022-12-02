@@ -98,8 +98,8 @@ class SourcingEnv():
         lead_time_comps = np.multiply(order_quantity_vec + outstd_orders, mu_lt_rate)
         lead_time_comp = np.sum(lead_time_comps)
 
-        mu_off_comp = np.sum(np.multiply(1 - onoff_status, mu_off_times))
-        mu_on_comp = np.sum(np.multiply(onoff_status, mu_on_times))
+        mu_off_comp = np.sum(np.multiply(onoff_status, mu_off_times))
+        mu_on_comp = np.sum(np.multiply(1 - onoff_status, mu_on_times))
 
         prob_demand_arrival = lambda_arrival + lead_time_comp + mu_off_comp + mu_on_comp
 
@@ -129,10 +129,10 @@ class SourcingEnv():
             onoff_status = state_obj.flag_on_off[k]
             assert onoff_status > -1, "Assertion Failed: On / off flag outside bound (0, 1)"
             if event_type == Event.SUPPLIER_ON:
-                return (1 - onoff_status) * self.mu_off_times[k] * tau_event
+                return (1 - onoff_status) * self.mu_on_times[k] * tau_event
             
             if event_type == Event.SUPPLIER_OFF:
-                return onoff_status * self.mu_on_times[k] * tau_event
+                return onoff_status * self.mu_off_times[k] * tau_event
         
         return 0
     

@@ -10,7 +10,7 @@ from opt.eval_policy import *
 if __name__ == '__main__':
 
     print("#### Running Debug Scenario #####")
-    filename = "output/msource_value_dic_07-04-2022-05-59-13.pkl"
+    filename = "output/msource_value_dic_12-01-2022-13-35-10.pkl"
 
     with open(filename, 'rb') as f:
         output_obj = pkl.load(f)
@@ -21,8 +21,7 @@ if __name__ == '__main__':
 
     sourcingEnv2 = SourcingEnv(
         lambda_arrival = model_params['mdp_env_params']['lambda'], # or 10
-        # procurement_cost_vec = np.array(model_params['mdp_env_params']['procurement_cost_vec']),
-        procurement_cost_vec = PROCUREMENT_COST_VEC,
+        procurement_cost_vec = np.array(model_params['mdp_env_params']['procurement_cost_vec']),
         supplier_lead_times_vec = np.array(model_params['mdp_env_params']['supplier_lead_times_vec']),
         fixed_costs = np.array(model_params['mdp_env_params']['fixed_costs']) if 'fixed_costs' in model_params['mdp_env_params'] else FIXED_COST_VEC,
         on_times = np.array([1, 1]), 
@@ -37,27 +36,37 @@ if __name__ == '__main__':
         flag_on_off = np.array([1, 1]))
 
     kwargs = {
-    "value_dic": value_dic, 
-    "periods": 6, 
-    "periods_val_it": 6,
-    "nested_mc_iters": 4,
-    "max_stock": 2,
-    "discount_fac": DISCOUNT_FAC,
-    "h_cost": model_params['policy_params']['h_cost'],
-    "b_penalty": model_params['policy_params']['b_penalty'],
-    "n_visit_lim": N_VISIT_LIM,
-    "default_ss_policy": ss_policy_fastest_supp_backlog,
-    "safe_factor": 1.1, #SAFE_FACTOR,
-    "sub_eval_periods": SUB_EVAL_PERIODS,
-    "sub_nested_mc_iter": SUB_NESTED_MC_ITER,
-    "approx_eval": True
-}
+        "value_dic": value_dic, 
+        "periods": 100, 
+        "periods_val_it": 30,
+        "nested_mc_iters": 4,
+        "max_stock": 2,
+        "discount_fac": DISCOUNT_FAC,
+        "h_cost": model_params['policy_params']['h_cost'],
+        "b_penalty": model_params['policy_params']['b_penalty'],
+        "n_visit_lim": N_VISIT_LIM,
+        "default_ss_policy": ss_policy_fastest_supp_backlog,
+        "safe_factor": 1.1, #SAFE_FACTOR,
+        "sub_eval_periods": SUB_EVAL_PERIODS,
+        "sub_nested_mc_iter": SUB_NESTED_MC_ITER,
+        "approx_eval": True
+    }
+
+    sourcingEnv2.lambda_arrival = 50
+    # sourcingEnv2.mu_lt_rate = np.array([12.5, 5.5])
+    mc_avg_costs = mc_with_policy(sourcingEnv2, 
+        start_state = s_custom, 
+        use_tqdm = False,
+        policy_callback = dummy_explore_policy,
+        **kwargs
+    )
 
     mc_avg_costs = mc_with_policy(sourcingEnv2, 
         start_state = s_custom, 
         use_tqdm = False,
         policy_callback = eval_policy_from_value_dic,
-        **kwargs)
+        **kwargs
+    )
 
     # single_supplier_mean_costs = []
     # for s in range(sourcingEnv2.n_suppliers):
@@ -127,8 +136,6 @@ if __name__ == '__main__':
     value_dic = output_obj["state_value_dic"]
     model_params = output_obj["model_params"]
 
-    
-
     mc_avg_costs = mc_with_policy(sourcingEnv, 
         periods = 30,
         nested_mc_iters = 100,
@@ -138,7 +145,6 @@ if __name__ == '__main__':
         b_penalty = model_params['policy_params']['b_penalty'],
         use_tqdm = True,
         policy_callback = single_source_orderupto_policy)
-
     
     eval_steps = 50
     mc_eval_iter = 3
@@ -174,3 +180,4 @@ if __name__ == '__main__':
 
         
     print("#### Total Cost: " + str(np.sum(total_costs)) + " / Avg. Cost: " +  str(np.sum(total_costs)/periods) )
+

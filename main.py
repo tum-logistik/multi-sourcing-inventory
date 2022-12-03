@@ -84,9 +84,8 @@ if __name__ == '__main__':
     kwargs = {
         "value_dic": output_dic["state_value_dic"], 
         "periods": 30, 
-        "periods_val_it": 10,
-        "nested_mc_iters": 10,
-        "max_stock": BIG_S,
+        "periods_val_it": 30,
+        "nested_mc_iters": 30,
         "discount_fac": DISCOUNT_FAC,
         "h_cost": output_dic['model_params']['policy_params']['h_cost'],
         "b_penalty": output_dic['model_params']['policy_params']['b_penalty'],
@@ -95,7 +94,7 @@ if __name__ == '__main__':
         "safe_factor": SAFE_FACTOR,
         "sub_eval_periods": SUB_EVAL_PERIODS,
         "sub_nested_mc_iter": SUB_NESTED_MC_ITER,
-        "max_stock": 2,
+        "max_stock": BIG_S,
         "approx_eval": True
     }
 

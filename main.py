@@ -83,9 +83,9 @@ if __name__ == '__main__':
     
     kwargs = {
         "value_dic": output_dic["state_value_dic"], 
-        "periods": 10, 
-        "periods_val_it": 1,
-        "nested_mc_iters": 30,
+        "periods": 30, 
+        "periods_val_it": 10,
+        "nested_mc_iters": 10,
         "max_stock": BIG_S,
         "discount_fac": DISCOUNT_FAC,
         "h_cost": output_dic['model_params']['policy_params']['h_cost'],

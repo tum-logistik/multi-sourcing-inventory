@@ -80,12 +80,16 @@ if __name__ == '__main__':
         b_penalty = output_dic['model_params']['policy_params']['b_penalty'],
         policy_callback=dual_index_policy,
         use_tqdm = True)
+
+    print("Running ADP eval: writing temp file to : " + write_path)
+    with open(write_path, 'wb') as handle:
+        pickle.dump(output_dic, handle, protocol=pickle.HIGHEST_PROTOCOL)
     
     kwargs = {
         "value_dic": output_dic["state_value_dic"], 
         "periods": 30, 
-        "periods_val_it": 30,
-        "nested_mc_iters": 30,
+        "periods_val_it": 10,
+        "nested_mc_iters": 10,
         "discount_fac": DISCOUNT_FAC,
         "h_cost": output_dic['model_params']['policy_params']['h_cost'],
         "b_penalty": output_dic['model_params']['policy_params']['b_penalty'],

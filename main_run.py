@@ -10,7 +10,7 @@ from opt.eval_policy import *
 if __name__ == '__main__':
 
     print("#### Running Debug Scenario #####")
-    filename = "output/msource_value_dic_12-01-2022-15-38-43.pkl"
+    filename = "output/msource_value_dic_12-03-2022-21-12-30.pkl"
 
     with open(filename, 'rb') as f:
         output_obj = pkl.load(f)
@@ -35,12 +35,26 @@ if __name__ == '__main__':
         n_backorders = np.array([0, 0]), 
         flag_on_off = np.array([1, 1]))
 
+    kwargs = {"periods" : 30,
+        "nested_mc_iters" : 100,
+        "h_cost": model_params['policy_params']['h_cost'],
+        "b_penalty" : model_params['policy_params']['b_penalty'],
+        "supplier_index": 1
+    }
+
+    single_supplier_costs = mc_with_policy(sourcingEnv2, start_state = s_custom, 
+        use_tqdm = True,
+        policy_callback = single_source_orderupto_policy,
+        **kwargs)
+        
+    single_supplier_avg_cost = np.mean(single_supplier_costs)
+
     kwargs = {
         "value_dic": value_dic, 
         "periods": 100, 
         "periods_val_it": 30,
-        "nested_mc_iters": 4,
-        "max_stock": 2,
+        "nested_mc_iters": 15,
+        "max_stock": 10,
         "discount_fac": DISCOUNT_FAC,
         "h_cost": model_params['policy_params']['h_cost'],
         "b_penalty": model_params['policy_params']['b_penalty'],
@@ -61,6 +75,8 @@ if __name__ == '__main__':
         supplier_index = 1,
         **kwargs
     )
+
+    ss_cost = np.mean(mc_avg_costs)
 
     mc_avg_costs = mc_with_policy(sourcingEnv2, 
         start_state = s_custom, 

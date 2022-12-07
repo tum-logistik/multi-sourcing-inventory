@@ -24,9 +24,14 @@ class CustomGymEnv(Env):
                                                    
         
     def step(self, action):
-            reward = self.reward_func(self.SourcingEnv.current_state, action)
+                                            
             next_state, event, i, event_probs, supplier_index = self.SourcingEnv.step(action)
             self.counter += 1
+            
+            if (next_state.s) >=0: 
+                reward = -float((2 * next_state.s) + np.sum(np.multiply(action, PROCUREMENT_COST_VEC)))
+            else: 
+                reward = -float((-10* next_state.s) + np.sum(np.multiply(action, PROCUREMENT_COST_VEC)))
             
             info = {}
             
@@ -41,11 +46,5 @@ class CustomGymEnv(Env):
     def reset(self):
             self.SourcingEnv = SourcingEnv()
             return np.array(self.SourcingEnv.current_state.get_list_repr())
-            
-    def reward_func(self, state, action):
-            reward_hb = H_COST * state.s if state.s >= 0 else (-B_PENALTY * state.s )
-            reward = reward_hb + np.sum(np.multiply(action, PROCUREMENT_COST_VEC))
-            reward = float(reward)
-            return -reward
    
  

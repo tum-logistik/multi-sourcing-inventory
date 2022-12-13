@@ -52,10 +52,21 @@ def dual_index_policy(sourcingEnv, **kwargs):
     # print("Opt vec: " + str(ord_vec_opt))
     # Safety cap
     if sourcingEnv.current_state.s >= safety_factor_di:# and False:
+        # kwargs1 = {"periods" : 30,
+        #     "nested_mc_iters" : 30,
+        #     "supplier_index": 1
+        # }
+        # ord_vec_opt = single_source_orderupto_policy(sourcingEnv, **kwargs1)
         ord_vec_opt = ss_policy_fastest_supp_backlog(sourcingEnv)
+        return ord_vec_opt
     elif sourcingEnv.current_state.s < 0:# and False:
-        ord_vec_opt = ss_policy_fastest_supp_backlog(sourcingEnv)
-        # return ord_vec_opt
+        kwargs1 = {"periods" : 30,
+            "nested_mc_iters" : 30,
+            "supplier_index": 1
+        }
+        ord_vec_opt = single_source_orderupto_policy(sourcingEnv, **kwargs1)
+        # ord_vec_opt = ss_policy_fastest_supp_backlog(sourcingEnv)
+        return ord_vec_opt
     # elif False:
     else:
         min_cost = np.Inf
@@ -175,6 +186,32 @@ def myopic2_policy(sourcingEnv, **kwargs):
     return myopic_order
 
 
+
+def best_single_supplier_index(sourcingEnv):
+
+    single_supplier_mean_costs = []
+    sing_supp_mean_cost = np.Inf
+    for s in range(sourcingEnv.n_suppliers):
+        kwargs = {"periods" : 30,
+            "nested_mc_iters" : 100,
+            "h_cost": H_COST,
+            "b_penalty": B_PENALTY,
+            "supplier_index": s
+        }
+
+        single_supplier_costs = mc_with_policy(sourcingEnv, start_state = sourcingEnv.current_state, 
+            use_tqdm = True,
+            policy_callback = single_source_orderupto_policy,
+            **kwargs)
+        
+        sing_supp_mean_cost_i = np.mean(single_supplier_costs)
+        single_supplier_mean_costs.append(sing_supp_mean_cost_i)
+
+        if sing_supp_mean_cost_i < sing_supp_mean_cost:
+            single_supplier_costs_select = single_supplier_costs
+            sing_supp_mean_cost = sing_supp_mean_cost_i
+    
+    return np.argmin(single_supplier_mean_costs)
 ### Legacy
 # orders up to S items, when inven < s, orders with a uniform random supplier, order amount S - s
 def ss_policy_rand_supp(sourcingEnv, small_s, big_s):
@@ -312,5 +349,8 @@ def mc_with_policy(sourcingEnv,
     return mc_avg_costs
 
 
-def dummy_explore_policy(state, **kwargs):
-    return np.array([1, 0])
+def dummy_explore_policy(sourcingEnv, **kwargs):
+    if sourcingEnv.current_state.s < -1:
+        return np.array([0, 3])
+    else:
+        return np.array([0, 0])

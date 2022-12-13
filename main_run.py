@@ -10,7 +10,7 @@ from opt.eval_policy import *
 if __name__ == '__main__':
 
     print("#### Running Debug Scenario #####")
-    filename = "output/msource_value_dic_12-03-2022-21-12-30.pkl"
+    filename = "output/msource_value_dic_12-03-2022-16-28-25.pkl"
 
     with open(filename, 'rb') as f:
         output_obj = pkl.load(f)
@@ -19,13 +19,17 @@ if __name__ == '__main__':
     model_params = output_obj["model_params"]
     sourcingEnv = output_obj["mdp_env"]
 
-    sourcingEnv2 = SourcingEnv(
-        lambda_arrival = model_params['mdp_env_params']['lambda'], # or 10
-        procurement_cost_vec = np.array(model_params['mdp_env_params']['procurement_cost_vec']),
-        supplier_lead_times_vec = np.array(model_params['mdp_env_params']['supplier_lead_times_vec']),
-        fixed_costs = np.array(model_params['mdp_env_params']['fixed_costs']) if 'fixed_costs' in model_params['mdp_env_params'] else FIXED_COST_VEC,
-        on_times = np.array([1, 1]), 
-        off_times = np.array([np.Inf, np.Inf]))
+    
+
+    # sourcingEnv2 = SourcingEnv(
+    #     lambda_arrival = model_params['mdp_env_params']['lambda'], # or 10
+    #     procurement_cost_vec = np.array(model_params['mdp_env_params']['procurement_cost_vec']),
+    #     supplier_lead_times_vec = np.array(model_params['mdp_env_params']['supplier_lead_times_vec']),
+    #     fixed_costs = np.array(model_params['mdp_env_params']['fixed_costs']) if 'fixed_costs' in model_params['mdp_env_params'] else FIXED_COST_VEC,
+    #     on_times = np.array(model_params['mdp_env_params']['on_times']), 
+    #     off_times = np.array(model_params['mdp_env_params']['off_times'])  )
+    
+    sourcingEnv2 = sourcingEnv
     
     cost = cost_calc(sourcingEnv2.current_state, h_cost = 4, b_penalty = 6)
     print(str(sourcingEnv2.current_state) + " cost: " + str(cost))
@@ -35,12 +39,36 @@ if __name__ == '__main__':
         n_backorders = np.array([0, 0]), 
         flag_on_off = np.array([1, 1]))
 
-    kwargs = {"periods" : 30,
+    sourcingEnv2.lambda_arrival = 50
+    kwargs = {"periods" : 100,
         "nested_mc_iters" : 100,
         "h_cost": model_params['policy_params']['h_cost'],
         "b_penalty" : model_params['policy_params']['b_penalty'],
         "supplier_index": 1
     }
+
+    mc_avg_costs_di = mc_with_policy(sourcingEnv2, start_state = s_custom, 
+        periods = 30,
+        nested_mc_iters = 30,
+        big_s = model_params['policy_params']['big_s'],
+        small_s = model_params['policy_params']['small_s'],
+        h_cost = model_params['policy_params']['h_cost'],
+        b_penalty = model_params['policy_params']['b_penalty'],
+        policy_callback=dual_index_policy,
+        use_tqdm = True)
+
+    print(np.mean(np.array(mc_avg_costs_di)))
+    print(np.median(np.array(mc_avg_costs_di)))
+    print(np.std(np.array(mc_avg_costs_di)))
+
+    single_supplier_costs = mc_with_policy(sourcingEnv2, start_state = s_custom, 
+        use_tqdm = True,
+        policy_callback = dummy_explore_policy,
+        **kwargs)
+    
+    avg_sing_supp_costs = np.mean(single_supplier_costs)
+
+    print("test")
 
     single_supplier_costs = mc_with_policy(sourcingEnv2, start_state = s_custom, 
         use_tqdm = True,

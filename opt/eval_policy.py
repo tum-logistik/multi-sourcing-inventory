@@ -32,6 +32,7 @@ def eval_policy_from_value_dic(sourcingEnv,
     sub_eval_periods = SUB_EVAL_PERIODS if "sub_eval_periods" not in kwargs else kwargs["sub_eval_periods"]
     sub_nested_mc_iter = SUB_NESTED_MC_ITER if "sub_nested_mc_iter" not in kwargs else kwargs["sub_nested_mc_iter"]
     value_dic = None if "value_dic" not in kwargs else kwargs["value_dic"]
+
     if value_dic == None:
         print("Error no value dic supplied!")
         return False
@@ -53,6 +54,15 @@ def eval_policy_from_value_dic(sourcingEnv,
         ss_action = default_ss_policy(sourcingEnv)
 
         q_value_ss = None
+
+        if "uniformize" in kwargs and kwargs["uniformize"]:
+            # get min tau
+            min_tau = np.Inf
+            for pa in range(len(possible_joint_actions)):
+                arrival_time = sourcingEnv.compute_event_arrival_time(possible_joint_actions[pa])
+                if arrival_time < min_tau:
+                    min_tau = arrival_time
+            min_tau = min_tau/2
 
 
         for pa in possible_joint_actions:
@@ -87,7 +97,13 @@ def eval_policy_from_value_dic(sourcingEnv,
                 
                 potential_immediate_cost = -np.sum(np.multiply(sourcingEnv.procurement_cost_vec, pa)) -np.sum(fixed_costs)
 
-                reward_contrib += event_probs[e] * (potential_next_cost + potential_immediate_cost)
+                if "uniformize" in kwargs and kwargs["uniformize"]:
+                    tau_event = sourcingEnv.compute_event_arrival_time(possible_joint_actions[pa])
+                    norm_tau_fac = min_tau/tau_event
+                    norm_prob = event_probs[e] * norm_tau_fac if state_key != sourcingEnv.current_state.get_repr_key() else event_probs[e] * norm_tau_fac + (1 - norm_tau_fac)
+                    reward_contrib += norm_prob * (potential_next_cost + potential_immediate_cost)
+                else:
+                    reward_contrib += event_probs[e] * (potential_next_cost + potential_immediate_cost)
                 
                 if state_key in value_dic and value_dic[state_key][1] > n_visit_lim:
                     potential_state_value = value_dic[state_key][0]
@@ -156,3 +172,4 @@ def lp_mdp_policy(sourcingEnv, **kwargs):
         order_vec = eval_policy_from_value_dic(sourcingEnv, **kwargs)
 
     return order_vec
+

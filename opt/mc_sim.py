@@ -118,8 +118,10 @@ def approx_value_iteration(sourcingEnv, initial_state,
                         norm_prob = event_probs[i] * norm_tau_fac if state_key != sourcingEnv.current_state.get_repr_key() else event_probs[i] * norm_tau_fac + (1 - norm_tau_fac)
 
                         future_value += reward_contribution + norm_prob * avg_value_estimate
+                
                 fixed_costs = get_fixed_costs(possible_joint_actions[pa], fixed_costs_vec = sourcingEnv.fixed_costs)
-                action_reward = -np.sum(np.multiply(sourcingEnv.procurement_cost_vec, possible_joint_actions[pa])) - np.sum(fixed_costs)
+                tau_event_ac = sourcingEnv.compute_event_arrival_time(possible_joint_actions[pa])
+                action_reward = (-np.sum(np.multiply(sourcingEnv.procurement_cost_vec, possible_joint_actions[pa])) - np.sum(fixed_costs)) / tau_event_ac
 
                 value_array[pa] = action_reward + future_value
                 

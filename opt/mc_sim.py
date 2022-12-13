@@ -57,6 +57,15 @@ def approx_value_iteration(sourcingEnv, initial_state,
             possible_joint_actions = get_combo(int(max_stock - sourcingEnv.current_state.s), sourcingEnv.n_suppliers)
             # We know the transition probabilities
             value_array = np.zeros(len(possible_joint_actions))
+
+            # get min tau
+            min_tau = np.Inf
+            for pa in range(len(possible_joint_actions)):
+                arrival_time = sourcingEnv.compute_event_arrival_time(possible_joint_actions[pa])
+                if arrival_time < min_tau:
+                    min_tau = arrival_time
+            min_tau = min_tau/2
+
             for pa in range(len(possible_joint_actions)):
                 future_value = 0
                 event_probs = sourcingEnv.get_event_probs(possible_joint_actions[pa])
@@ -103,7 +112,12 @@ def approx_value_iteration(sourcingEnv, initial_state,
                         # else:
                         #     avg_value_estimate = np.mean(list(state_value_dic.values()))
 
-                        future_value += reward_contribution + event_probs[i] * avg_value_estimate
+                        # uniformized event probability SMDP
+                        tau_event = sourcingEnv.compute_event_arrival_time(possible_joint_actions[pa])
+                        norm_tau_fac = min_tau/tau_event
+                        norm_prob = event_probs[i] * norm_tau_fac if state_key != sourcingEnv.current_state.get_repr_key() else event_probs[i] * norm_tau_fac + (1 - norm_tau_fac)
+
+                        future_value += reward_contribution + norm_prob * avg_value_estimate
                 fixed_costs = get_fixed_costs(possible_joint_actions[pa], fixed_costs_vec = sourcingEnv.fixed_costs)
                 action_reward = -np.sum(np.multiply(sourcingEnv.procurement_cost_vec, possible_joint_actions[pa])) - np.sum(fixed_costs)
 

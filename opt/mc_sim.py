@@ -37,6 +37,8 @@ def approx_value_iteration(sourcingEnv, initial_state,
         
     # initialize states, ex. dual sourcing 40k, 3x sourcing 800k states
     state_value_dic = {}
+    action_policy_dic = {}
+
     sourcingEnv.reset()
 
     if cache_value_est:
@@ -143,6 +145,7 @@ def approx_value_iteration(sourcingEnv, initial_state,
                 selected_action = np.array([0, 0])
             
             next_state, event, _, _, supplier_index = sourcingEnv.step(selected_action)
+            action_policy_dic[state_add] = selected_action
             
             step_time = time.time() - step_start_time
             
@@ -160,7 +163,10 @@ def approx_value_iteration(sourcingEnv, initial_state,
 
         # model save every save_interval intervals
         write_path = 'output/msource_value_dic_{dt}_interval.pkl'.format(dt = str(model_start_date_time)) if 'larkin' in platform.node() else 'output/msource_value_dic_{dt}.pkl'.format(dt = str(model_start_date_time))
-        output_obj = {"state_value_dic": state_value_dic, "model_params": model_args_dic, "mdp_env": sourcingEnv}
+        output_obj = {"state_value_dic": state_value_dic, 
+            "model_params": model_args_dic, 
+            "mdp_env": sourcingEnv,
+            "pol_dic": action_policy_dic}
 
         with open(write_path, 'wb') as handle:
             pickle.dump(output_obj, handle, protocol=pickle.HIGHEST_PROTOCOL)

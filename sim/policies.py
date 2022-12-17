@@ -45,6 +45,7 @@ def dual_index_policy(sourcingEnv, **kwargs):
     b_penalty = B_PENALTY if "b_penalty" not in kwargs else kwargs["b_penalty"]
     delta_cand_range = DI_DEL_RNG if "delta_cand_range" not in kwargs else kwargs["delta_cand_range"]
     safety_factor_di = DI_SF_FAC if "safety_factor_di" not in kwargs else kwargs["safety_factor_di"]
+    max_order = BIG_S if "max_order" not in kwargs else kwargs["max_order"]
 
     assert sourcingEnv.tracking_flag, "Assertion: Tracking feature must be on for dual index policy"
 
@@ -58,7 +59,6 @@ def dual_index_policy(sourcingEnv, **kwargs):
         # }
         # ord_vec_opt = single_source_orderupto_policy(sourcingEnv, **kwargs1)
         ord_vec_opt = ss_policy_fastest_supp_backlog(sourcingEnv)
-        return ord_vec_opt
     elif sourcingEnv.current_state.s < 0:# and False:
         kwargs1 = {"periods" : 30,
             "nested_mc_iters" : 30,
@@ -66,7 +66,6 @@ def dual_index_policy(sourcingEnv, **kwargs):
         }
         ord_vec_opt = single_source_orderupto_policy(sourcingEnv, **kwargs1)
         # ord_vec_opt = ss_policy_fastest_supp_backlog(sourcingEnv)
-        return ord_vec_opt
     # elif False:
     else:
         min_cost = np.Inf
@@ -106,7 +105,9 @@ def dual_index_policy(sourcingEnv, **kwargs):
         ord_vec_opt[sourcingEnv.exp_ind] = np.clip(ze_opt - sourcingEnv.current_state.s, 0, np.Inf)
         ord_vec_opt[sourcingEnv.reg_ind] = np.clip(zr_opt - sourcingEnv.current_state.s, 0, np.Inf)
     
-    return ord_vec_opt
+    ord_vec_opt_clip = np.clip(ord_vec_opt, 0, max_order)
+
+    return ord_vec_opt_clip
 
 
 def inv_poisson(perc, lambda_arrival, x_lim = 60, delt = 0):
@@ -351,6 +352,6 @@ def mc_with_policy(sourcingEnv,
 
 def dummy_explore_policy(sourcingEnv, **kwargs):
     if sourcingEnv.current_state.s < -1:
-        return np.array([0, 3])
+        return np.array([0, 1])
     else:
-        return np.array([0, 0])
+        return np.array([0, 1])

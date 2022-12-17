@@ -45,7 +45,9 @@ if __name__ == '__main__':
         max_S = BIG_S)
 
     print("sS* policy: " + str((best_small_s, best_big_s, best_val)))
-    output_dic = approx_value_iteration(sourcingEnv, s_initial, big_s = best_big_s, small_s = best_small_s)
+    output_dic = approx_value_iteration(sourcingEnv, s_initial, 
+        big_s = best_big_s, 
+        small_s = best_small_s)
 
     output_dic['model_params']['git_commit'] = sha
     output_dic['model_params']['branch_name'] = branch_name
@@ -70,16 +72,6 @@ if __name__ == '__main__':
         use_tqdm = True)
     
     output_dic['approx_di_cost'] = np.mean(np.array(mc_avg_costs))
-
-    eval_costs = mc_with_policy(sourcingEnv, 
-        periods = output_dic['model_params']['algo_params']['periods'],
-        nested_mc_iters = output_dic['model_params']['algo_params']['nested_mc_iters'],
-        big_s = output_dic['model_params']['policy_params']['big_s'],
-        small_s = output_dic['model_params']['policy_params']['small_s'],
-        h_cost = output_dic['model_params']['policy_params']['h_cost'],
-        b_penalty = output_dic['model_params']['policy_params']['b_penalty'],
-        policy_callback=dual_index_policy,
-        use_tqdm = True)
 
     print("Running ADP eval: writing temp file to : " + write_path)
     with open(write_path, 'wb') as handle:

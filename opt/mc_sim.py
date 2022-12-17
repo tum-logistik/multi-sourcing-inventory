@@ -179,7 +179,7 @@ def approx_value_iteration(sourcingEnv, initial_state,
         else:
             print("############ episode: {ep} | elapsed time: {time}".format(ep = str(e), time = str(episode_run_time) ))
     
-    return {"state_value_dic": state_value_dic, "model_params": model_args_dic, "mdp_env": sourcingEnv}
+    return {"state_value_dic": state_value_dic, "model_params": model_args_dic, "mdp_env": sourcingEnv, "pol_dic": action_policy_dic}
 
 
 def optimistic_lowest_cost_func(sourcingEnv, potential_state, big_s, small_s):

@@ -91,12 +91,13 @@ if __name__ == '__main__':
         "sub_eval_periods": SUB_EVAL_PERIODS,
         "sub_nested_mc_iter": SUB_NESTED_MC_ITER,
         "max_stock": BIG_S,
-        "approx_eval": True
+        "approx_eval": True,
+        "pol_dic": output_dic["pol_dic"]
     }
 
     mc_avg_costs = mc_with_policy(sourcingEnv, 
         use_tqdm = True,
-        policy_callback = eval_policy_from_value_dic,
+        policy_callback = eval_policy_from_policy_dic,
         **kwargs)
 
     eval_costs_scaled = np.mean(mc_avg_costs)

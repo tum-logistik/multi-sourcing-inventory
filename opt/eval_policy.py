@@ -9,31 +9,29 @@ from tqdm import tqdm
 
 
 def eval_policy_from_policy_dic(sourcingEnv, 
-        default_policy = ssn_policy, 
+        default_policy = dual_index_policy, 
         **kwargs
     ):
 
-    # value_dic, max_steps,
-    #     sub_nested_mc_iter = SUB_NESTED_MC_ITER
-
-    max_stock = BIG_S if "max_stock" not in kwargs else kwargs["max_stock"]
-    big_s = BIG_S if "big_s" not in kwargs else kwargs["big_s"]
-    small_s = SMALL_S if "small_s" not in kwargs else kwargs["small_s"]
     periods = PERIODS if "periods_val_it" not in kwargs else kwargs["periods_val_it"]
 
     b_penalty = B_PENALTY if "b_penalty" not in kwargs else kwargs["b_penalty"]
     h_cost = H_COST if "h_cost" not in kwargs else kwargs["h_cost"]
     
-    default_ss_policy = default_policy if "default_ss_policy" not in kwargs else kwargs["default_ss_policy"]
-    n_visit_lim = N_VISIT_LIM if "n_visit_lim" not in kwargs else kwargs["n_visit_lim"]
-    discount_fac = DISCOUNT_FAC if "discount_fac" not in kwargs else kwargs["discount_fac"]
-    safe_factor = SAFE_FACTOR if "safe_factor" not in kwargs else kwargs["safe_factor"]
-    sub_eval_periods = SUB_EVAL_PERIODS if "sub_eval_periods" not in kwargs else kwargs["sub_eval_periods"]
-    sub_nested_mc_iter = SUB_NESTED_MC_ITER if "sub_nested_mc_iter" not in kwargs else kwargs["sub_nested_mc_iter"]
-    value_dic = None if "policy_dic" not in kwargs else kwargs["policy_dic"]
-    if value_dic == None:
-        print("Error no value dic supplied!")
+    policy_dic = None if "pol_dic" not in kwargs else kwargs["pol_dic"]
+
+    if policy_dic == None:
+        print("Error no policy dic supplied!")
         return False
+
+    for m in range(periods):
+        current_state = sourcingEnv.current_state
+        if current_state.get_repr_key() in policy_dic:
+            best_action = policy_dic[current_state.get_repr_key()]
+        else:
+            best_action = default_policy(sourcingEnv)
+    
+    return best_action
 
 
 def eval_policy_from_value_dic(sourcingEnv, 

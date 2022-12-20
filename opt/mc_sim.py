@@ -183,11 +183,12 @@ def approx_value_iteration(sourcingEnv, initial_state,
 
 
 def optimistic_lowest_cost_func(sourcingEnv, potential_state, big_s, small_s):
-    eval_costs_ss = mc_with_policy(sourcingEnv, potential_state, big_s = big_s, small_s = small_s, policy_callback = ss_policy_fastest_supp_backlog)
+    # eval_costs_ss = mc_with_policy(sourcingEnv, potential_state, big_s = big_s, small_s = small_s, policy_callback = ss_policy_fastest_supp_backlog)
     # eval_costs_di = mc_with_policy(sourcingEnv, potential_state, big_s = big_s, small_s = small_s, policy_callback = dual_index_policy)
+    eval_costs_m2 = mc_with_policy(sourcingEnv, potential_state, big_s = big_s, small_s = small_s, periods = 10, nested_mc_iters = 2, policy_callback = myopic2_policy)
     eval_costs_s0 = mc_with_policy(sourcingEnv, potential_state, big_s = big_s, small_s = small_s, policy_callback = single_source_orderupto_policy, supplier_index = 0)
     eval_costs_s1 = mc_with_policy(sourcingEnv, potential_state, big_s = big_s, small_s = small_s, policy_callback = single_source_orderupto_policy, supplier_index = 1)
-    value_estimates = np.min([np.mean(eval_costs_ss), np.mean(eval_costs_s0), np.mean(eval_costs_s1)])
+    value_estimates = np.min([np.mean(eval_costs_m2), np.mean(eval_costs_s0), np.mean(eval_costs_s1)])
     return value_estimates
 
 def find_opt_ss_policy_via_mc(sourcingEnv, 

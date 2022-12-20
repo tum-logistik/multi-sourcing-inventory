@@ -19,19 +19,21 @@ def eval_policy_from_policy_dic(sourcingEnv,
     h_cost = H_COST if "h_cost" not in kwargs else kwargs["h_cost"]
     
     policy_dic = None if "pol_dic" not in kwargs else kwargs["pol_dic"]
+    max_stock = BIG_S if "max_stock" not in kwargs else kwargs["max_stock"]
 
     if policy_dic == None:
         print("Error no policy dic supplied!")
         return False
-
-    for m in range(periods):
-        current_state = sourcingEnv.current_state
-        if current_state.get_repr_key() in policy_dic:
-            best_action = policy_dic[current_state.get_repr_key()]
-        else:
-            best_action = default_policy(sourcingEnv)
     
-    return best_action
+    current_state = sourcingEnv.current_state
+    if current_state.get_repr_key() in policy_dic:
+        best_action = policy_dic[current_state.get_repr_key()]
+    else:
+        best_action = default_policy(sourcingEnv)
+
+    best_action_clip = np.clip(best_action, 0, max_stock)
+    
+    return best_action_clip
 
 
 def eval_policy_from_value_dic(sourcingEnv, 

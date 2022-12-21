@@ -53,3 +53,8 @@ def get_combo_reduction(y, n):
     full_combo = np.array(np.meshgrid(*[range(0, y) for x in range(n)])).T.reshape(-1, n)
     filtered_output = np.array(list(filter(lambda x: 0 in x, list(full_combo))))
     return filtered_output
+
+def get_combo_all_states(inventory_state_space, supplier_outstanding_space, n_suppliers):
+    test_args = [[inventory_state_space], [supplier_outstanding_space]*n_suppliers, [[0, 1]]*n_suppliers]
+    flat_list_args = [item for sublist in test_args for item in sublist]
+    return np.array(np.meshgrid(*flat_list_args)).T.reshape(-1, len(flat_list_args))

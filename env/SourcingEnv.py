@@ -49,10 +49,18 @@ class SourcingEnvMDP():
 
         self.availibilities = np.array([0.5]*self.n_suppliers)
         for n in range(self.n_suppliers):
-            self.availibilities = self.mu_off_times[n] / (self.mu_off_times[n] + self.mu_on_times[n])
+            self.availibilities[n] = self.mu_off_times[n] / (self.mu_off_times[n] + self.mu_on_times[n])
         
         # initialize marginal probability matrix
-        self.all_trans_event_probs = get_combo_all_states(list(range(self.max_demand)), list(range(self.max_supply_cap)), 2)
+        self.all_trans_event_array = get_combo_states_grid(list(range(self.max_demand)), list(range(self.max_supply_cap)), 2)
+        self.trans_prob_dic = generate_trans_dic(self.all_trans_event_array, self.lambda_arrival, self.availibilities, 
+            demand_overage_prob = self.demand_overage_prob, n_suppliers = self.n_suppliers)
+
+        #sanity #check this!!
+        tt = self.trans_prob_dic[repr(np.array([0,1,0,1,1]))]
+        vv = self.trans_prob_dic[repr(np.array([0,4,0,1,1]))]
+
+        print("init ready")
 
     # state is defined as inventories of each agent + 
     def reset(self):
@@ -109,46 +117,45 @@ class SourcingEnvMDP():
             next_inven_level = next_state_obj.s
             marg_event_prob = poisson.cdf(next_inven_level, self.lambda_arrival) - poisson.cdf(next_inven_level-1, self.lambda_arrival) - self.demand_overage_prob
 
+        #     if False:
+        #         if event == Event.DEMAND_ARRIVAL:
+        #             next_inven_level = next_state_obj.s
+        #             marg_event_prob = poisson.cdf(next_inven_level, self.lambda_arrival) - poisson.cdf(next_inven_level-1, self.lambda_arrival)
 
-            if False:
-                if event == Event.DEMAND_ARRIVAL:
-                    next_inven_level = next_state_obj.s
-                    marg_event_prob = poisson.cdf(next_inven_level, self.lambda_arrival) - poisson.cdf(next_inven_level-1, self.lambda_arrival)
+        #         elif event == Event.SUPPLY_ARRIVAL:
+        #             for n 
 
-                elif event == Event.SUPPLY_ARRIVAL:
-                    for n 
-
-                elif 1 + self.n_suppliers - 1 < i < 1 + 2*self.n_suppliers:
-                    event = Event.SUPPLIER_ON
-                    supplier_index = i - 1 - self.n_suppliers
-                    next_state.flag_on_off[supplier_index] = np.clip(next_state.flag_on_off[supplier_index] + 1, 0 ,1)
-                    assert -1 < next_state.flag_on_off[supplier_index] < 2, "Assertion Failed: Supplier ON Index over 1 or under 0"
-                elif 1 + 2*self.n_suppliers - 1 < i:
-                    event = Event.SUPPLIER_OFF
-                    supplier_index = i - 1 - 2*self.n_suppliers
-                    next_state.flag_on_off[supplier_index] = np.clip(next_state.flag_on_off[supplier_index] - 1, 0 ,1)
-                    assert -1 < next_state.flag_on_off[supplier_index] < 2, "Assertion Failed: Supplier OFF Index over 1 or under 0"
-                else:
-                    event = Event.NO_EVENT # No state transition
-                    supplier_index = None
+        #         elif 1 + self.n_suppliers - 1 < i < 1 + 2*self.n_suppliers:
+        #             event = Event.SUPPLIER_ON
+        #             supplier_index = i - 1 - self.n_suppliers
+        #             next_state.flag_on_off[supplier_index] = np.clip(next_state.flag_on_off[supplier_index] + 1, 0 ,1)
+        #             assert -1 < next_state.flag_on_off[supplier_index] < 2, "Assertion Failed: Supplier ON Index over 1 or under 0"
+        #         elif 1 + 2*self.n_suppliers - 1 < i:
+        #             event = Event.SUPPLIER_OFF
+        #             supplier_index = i - 1 - 2*self.n_suppliers
+        #             next_state.flag_on_off[supplier_index] = np.clip(next_state.flag_on_off[supplier_index] - 1, 0 ,1)
+        #             assert -1 < next_state.flag_on_off[supplier_index] < 2, "Assertion Failed: Supplier OFF Index over 1 or under 0"
+        #         else:
+        #             event = Event.NO_EVENT # No state transition
+        #             supplier_index = None
                 
-                if hasattr(self, 'tracking_flag'):
-                # if self.tracking_flag:
-                    self.action_history_tuple = self.append_time_tuple(self.action_history_tuple, [event_probs[i], order_quantity_vec])
+        #         if hasattr(self, 'tracking_flag'):
+        #         # if self.tracking_flag:
+        #             self.action_history_tuple = self.append_time_tuple(self.action_history_tuple, [event_probs[i], order_quantity_vec])
 
-                # Assume when supplier is unavailable, no addition to backlog.
-                for k in range(self.n_suppliers):
-                    if self.current_state.flag_on_off[k] == 1:
-                        next_state.n_backorders[k] += order_quantity_vec[k]
+        #         # Assume when supplier is unavailable, no addition to backlog.
+        #         for k in range(self.n_suppliers):
+        #             if self.current_state.flag_on_off[k] == 1:
+        #                 next_state.n_backorders[k] += order_quantity_vec[k]
                 
-                if supplier_index != None:
-                    assert supplier_index > -1, "Assertion Failed: supplier_index < 0"
-                else:
-                    assert event in [Event.DEMAND_ARRIVAL, Event.NO_EVENT], "AssertAssertion Failed: Unknown event."
+        #         if supplier_index != None:
+        #             assert supplier_index > -1, "Assertion Failed: supplier_index < 0"
+        #         else:
+        #             assert event in [Event.DEMAND_ARRIVAL, Event.NO_EVENT], "AssertAssertion Failed: Unknown event."
                 
-                tau_event = self.compute_event_arrival_time(order_quantity_vec)
-                next_state.state_tau = tau_event
-                self.current_state = next_state
+        #         tau_event = self.compute_event_arrival_time(order_quantity_vec)
+        #         next_state.state_tau = tau_event
+        #         self.current_state = next_state
         else:
             next_state = copy.deepcopy(self.current_state)
             demand_arrivals = np.random.poisson(self.lambda_arrival, 1)[0]

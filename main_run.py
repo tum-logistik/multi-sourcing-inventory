@@ -9,6 +9,11 @@ from opt.eval_policy import *
 
 if __name__ == '__main__':
 
+    SourcingEnvMDP()
+
+
+
+    pass 
     print("#### Running Debug Scenario #####")
     filename = "output/msource_value_dic_12-13-2022-02-18-47.pkl"
 

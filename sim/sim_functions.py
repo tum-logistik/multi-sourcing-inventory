@@ -1,5 +1,6 @@
 import numpy as np
 from common.variables import *
+from scipy.stats import poisson
 
 # simulation functions
 
@@ -45,6 +46,8 @@ def get_fixed_costs(order_vec, fixed_costs_vec = FIXED_COST_VEC):
     fixed_costs = np.multiply(fixed_costs_binary, fixed_costs_vec)
     return fixed_costs
 
+# Helpers
+
 def get_combo(y, n):
     return np.array(np.meshgrid(*[range(0, y) for x in range(n)])).T.reshape(-1, n)
 
@@ -54,7 +57,45 @@ def get_combo_reduction(y, n):
     filtered_output = np.array(list(filter(lambda x: 0 in x, list(full_combo))))
     return filtered_output
 
-def get_combo_all_states(inventory_state_space, supplier_outstanding_space, n_suppliers):
+def get_combo_states_grid(inventory_state_space, supplier_outstanding_space, n_suppliers):
     test_args = [[inventory_state_space], [supplier_outstanding_space]*n_suppliers, [[0, 1]]*n_suppliers]
     flat_list_args = [item for sublist in test_args for item in sublist]
     return np.array(np.meshgrid(*flat_list_args)).T.reshape(-1, len(flat_list_args))
+
+def arrival_poisson_prob(n, lambda_arrival, tail_prob = 0):
+    if n > 0:
+        arrival_prob =  poisson.cdf(n, lambda_arrival) - poisson.cdf(n-1, lambda_arrival) # - tail_prob
+    else:
+        arrival_prob = poisson.cdf(0, lambda_arrival)
+    
+    return np.clip(arrival_prob, 0, np.Inf)
+
+def binom_trial(p):
+    if np.random.uniform(0,1,1)[0] <= p:
+        return 1
+    else:
+        return 0
+
+def generate_trans_dic(all_trans_event_array, lambda_arrival, availibilities, demand_overage_prob = 0, n_suppliers = 2):
+    trans_prob_dic = {}
+    for e in range(all_trans_event_array.shape[0]):
+        event_row = all_trans_event_array[e]
+        event = repr(event_row)
+        demand_prob = arrival_poisson_prob(event_row[0], lambda_arrival, tail_prob = 0)
+        
+        supplier_prob = 1.0
+        for n in range(n_suppliers):
+            supplier_prob_n = arrival_poisson_prob(event_row[n+1], lambda_arrival, tail_prob = 0)
+            supplier_prob *= supplier_prob_n
+
+        supplier_status_prob = 1.0
+        for n in range(n_suppliers):
+            if event_row[n + 1 + n_suppliers] == 1: # going from 0 to 1
+                supplier_status_prob_n = 1 - availibilities[n]
+            else: # going from 1 to 0
+                supplier_status_prob_n = availibilities[n]
+            supplier_status_prob *= supplier_status_prob_n
+        
+        trans_prob_dic[event] = demand_prob*supplier_status_prob*supplier_status_prob
+    
+    return trans_prob_dic

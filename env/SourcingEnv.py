@@ -203,8 +203,9 @@ class SourcingEnv():
         elif 0 < i < 1 + self.n_suppliers:
             event = Event.SUPPLY_ARRIVAL
             supplier_index = i-1
-            next_state.s = next_state.s + 1 # next_state.n_backorders[supplier_index]
-            next_state.n_backorders[supplier_index] -= 1
+            if next_state.n_backorders[supplier_index] > 0:
+                next_state.s = next_state.s + 1  # next_state.n_backorders[supplier_index]
+                next_state.n_backorders[supplier_index] -= 1
         elif 1 + self.n_suppliers - 1 < i < 1 + 2*self.n_suppliers:
             event = Event.SUPPLIER_ON
             supplier_index = i - 1 - self.n_suppliers

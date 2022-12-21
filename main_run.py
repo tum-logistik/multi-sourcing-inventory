@@ -37,7 +37,8 @@ if __name__ == '__main__':
         n_backorders = np.array([0, 0]), 
         flag_on_off = np.array([1, 1]))
     
-    sourcingEnv2.lambda_arrival = 50
+    sourcingEnv2.lambda_arrival = 10
+    sourcingEnv2.procurement_cost_vec = np.array([4.5, 0.05])
     kwargs = {"periods" : 30,
         "nested_mc_iters" : 5,
         "h_cost": model_params['policy_params']['h_cost'],
@@ -48,17 +49,18 @@ if __name__ == '__main__':
     }
 
     dummy_cost = mc_with_policy(sourcingEnv2, start_state = s_custom, 
-        periods = 30,
-        nested_mc_iters = 5,
         big_s = model_params['policy_params']['big_s'],
         small_s = model_params['policy_params']['small_s'],
-        h_cost = model_params['policy_params']['h_cost'],
-        b_penalty = model_params['policy_params']['b_penalty'],
+        # h_cost = model_params['policy_params']['h_cost'],
+        # b_penalty = model_params['policy_params']['b_penalty'],
         max_order = 6, # BIG_S,
         policy_callback=dummy_explore_policy,
-        use_tqdm = True
+        use_tqdm = True,
+        **kwargs
     )
 
+    avg_dummy_cost = np.mean(dummy_cost)
+    print(avg_dummy_cost)
 
     dummy_cost = mc_with_policy(sourcingEnv2, start_state = s_custom, 
         periods = 30,

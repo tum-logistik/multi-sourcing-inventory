@@ -53,12 +53,8 @@ class SourcingEnvMDP():
         
         # initialize marginal probability matrix
         self.all_trans_event_array = get_combo_states_grid(list(range(self.max_demand)), list(range(self.max_supply_cap)), 2)
-        self.trans_prob_dic = generate_trans_dic(self.all_trans_event_array, self.lambda_arrival, self.availibilities, 
+        self.trans_prob_dic = generate_trans_dic(self.all_trans_event_array, self.lambda_arrival, self.mu_lt_rate, self.availibilities, 
             demand_overage_prob = self.demand_overage_prob, n_suppliers = self.n_suppliers)
-
-        #sanity #check this!!
-        tt = self.trans_prob_dic[repr(np.array([0,1,0,1,1]))]
-        vv = self.trans_prob_dic[repr(np.array([0,4,0,1,1]))]
 
         print("init ready")
 
@@ -97,7 +93,6 @@ class SourcingEnvMDP():
     def step(self, order_quantity_vec, force_event_tuple = None):
 
         assert order_quantity_vec.all() >= 0, "Assertion Failed: Negative order quantity!"
-        assert self.current_state.flag_on_off.all() == 0 or self.on_off_status.all() == 1, "Assertion Failed: ON OFF status must be equal to 0 or 1!"
         
         # Check force_event_tuple
 
@@ -109,13 +104,19 @@ class SourcingEnvMDP():
         if force_event_tuple is not None:
             # event = force_event_tuple[0]
             next_state_obj = force_event_tuple[0]
-            inventory_diff = self.current_state.s - next_state_obj.s
+            inventory_diff = next_state_obj.s - self.current_state.s
             
-            get_combo(4, 3)
+            all_trans_event_array_demand_neg = self.all_trans_event_array.copy()
+            all_trans_event_array_demand_neg[:,0] = -1*all_trans_event_array_demand_neg[:,0]
 
+            inds = np.argwhere(np.sum(all_trans_event_array_demand_neg[:,0:self.n_suppliers+1], axis=1) == inventory_diff)
+            arrival_events_next_state = self.all_trans_event_array[inds, :]
+
+            # probability of each event occuring,
+            # complex stuff...
 
             next_inven_level = next_state_obj.s
-            marg_event_prob = poisson.cdf(next_inven_level, self.lambda_arrival) - poisson.cdf(next_inven_level-1, self.lambda_arrival) - self.demand_overage_prob
+            # marg_event_prob = poisson.cdf(next_inven_level, self.lambda_arrival) - poisson.cdf(next_inven_level-1, self.lambda_arrival) - self.demand_overage_prob
 
         #     if False:
         #         if event == Event.DEMAND_ARRIVAL:

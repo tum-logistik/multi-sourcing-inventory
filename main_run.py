@@ -9,9 +9,11 @@ from opt.eval_policy import *
 
 if __name__ == '__main__':
 
-    SourcingEnvMDP()
+    senv = SourcingEnvMDP()
 
-
+    order_quantity_vec = np.array([2, 3])
+    next_state = MState(stock_level = 2, n_backorders = np.array([1, 2]), flag_on_off = np.array([1, 1]))
+    senv.step(order_quantity_vec, force_event_tuple = [next_state] )
 
     pass 
     print("#### Running Debug Scenario #####")

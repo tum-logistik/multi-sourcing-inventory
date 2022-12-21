@@ -32,9 +32,8 @@ MAX_INVEN = cfg['mdp_env_params']['max_inven']
 ACTION_SIZE = cfg['mdp_env_params']['action_size']
 DISCOUNT_FAC = cfg['mdp_env_params']['discount_fac']
 
-MAX_DEMAND = 5 # MDP
-MAX_SUPPLY_CAP = 6
-
+MAX_DEMAND = 7 # MDP
+MAX_SUPPLY_CAP = 5
 
 PROCUREMENT_COST_VEC = np.array(cfg['mdp_env_params']['procurement_cost_vec'])
 SUPPLIER_LEAD_TIMES_VEC = np.array(cfg['mdp_env_params']['supplier_lead_times_vec'])

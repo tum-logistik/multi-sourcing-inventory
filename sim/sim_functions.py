@@ -76,7 +76,7 @@ def binom_trial(p):
     else:
         return 0
 
-def generate_trans_dic(all_trans_event_array, lambda_arrival, availibilities, demand_overage_prob = 0, n_suppliers = 2):
+def generate_trans_dic(all_trans_event_array, lambda_arrival, supplier_arrival_rates, availibilities, demand_overage_prob = 0, n_suppliers = 2):
     trans_prob_dic = {}
     for e in range(all_trans_event_array.shape[0]):
         event_row = all_trans_event_array[e]
@@ -85,7 +85,7 @@ def generate_trans_dic(all_trans_event_array, lambda_arrival, availibilities, de
         
         supplier_prob = 1.0
         for n in range(n_suppliers):
-            supplier_prob_n = arrival_poisson_prob(event_row[n+1], lambda_arrival, tail_prob = 0)
+            supplier_prob_n = arrival_poisson_prob(event_row[n+1], supplier_arrival_rates[n], tail_prob = 0)
             supplier_prob *= supplier_prob_n
 
         supplier_status_prob = 1.0
@@ -96,6 +96,6 @@ def generate_trans_dic(all_trans_event_array, lambda_arrival, availibilities, de
                 supplier_status_prob_n = availibilities[n]
             supplier_status_prob *= supplier_status_prob_n
         
-        trans_prob_dic[event] = demand_prob*supplier_status_prob*supplier_status_prob
+        trans_prob_dic[event] = demand_prob * supplier_prob * supplier_status_prob
     
     return trans_prob_dic

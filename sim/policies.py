@@ -352,6 +352,6 @@ def mc_with_policy(sourcingEnv,
 
 def dummy_explore_policy(sourcingEnv, **kwargs):
     if sourcingEnv.current_state.s < -1:
-        return np.array([0, 1])
+        return np.array([1, 1])
     else:
         return np.array([0, 1])

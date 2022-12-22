@@ -10,7 +10,7 @@ from opt.eval_policy import *
 if __name__ == '__main__':
 
     print("#### Running Debug Scenario #####")
-    filename = "output/msource_value_dic_12-13-2022-02-18-47.pkl"
+    filename = "output/msource_value_dic_12-21-2022-23-09-40.pkl"
 
     with open(filename, 'rb') as f:
         output_obj = pkl.load(f)
@@ -37,9 +37,9 @@ if __name__ == '__main__':
         n_backorders = np.array([0, 0]), 
         flag_on_off = np.array([1, 1]))
     
-    sourcingEnv2.lambda_arrival = 10
-    sourcingEnv2.procurement_cost_vec = np.array([4.5, 0.05])
-    kwargs = {"periods" : 30,
+    # sourcingEnv2.lambda_arrival = 10
+    # sourcingEnv2.procurement_cost_vec = np.array([4.5, 0.5])
+    kwargs = {"periods" : 10,
         "nested_mc_iters" : 5,
         "h_cost": model_params['policy_params']['h_cost'],
         "b_penalty" : model_params['policy_params']['b_penalty'],

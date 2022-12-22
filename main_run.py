@@ -19,6 +19,8 @@ if __name__ == '__main__':
     model_params = output_obj["model_params"]
     sourcingEnv = output_obj["mdp_env"]
 
+    sourcingEnvTest = SourcingEnv()
+
     # sourcingEnv2 = SourcingEnv(
     #     lambda_arrival = model_params['mdp_env_params']['lambda'], # or 10
     #     procurement_cost_vec = np.array(model_params['mdp_env_params']['procurement_cost_vec']),

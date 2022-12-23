@@ -12,11 +12,8 @@ def cost_calc_unit(state, h_cost = H_COST, b_penalty = B_PENALTY):
     return cost
 
 def cost_calc(state, h_cost = H_COST, b_penalty = B_PENALTY):
-    holding_cost = state.s * h_cost
-    bo_penalty = np.abs(state.s * b_penalty)
-    unit_cost = holding_cost if state.s > 0 else bo_penalty
+    unit_cost = cost_calc_unit(state, h_cost, b_penalty)
     cost = unit_cost * state.state_tau
-    # cost = (state.s * h_cost if state.s > 0 else np.abs(state.s * b_penalty)) * state.state_tau
     return cost
 
 def cost_calc_expected_di(sourcingEnv, order_quantity_vec, custom_state = None, h_cost = H_COST, b_penalty = B_PENALTY):

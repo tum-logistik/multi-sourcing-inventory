@@ -1,3 +1,4 @@
+import sys
 from env.SourcingEnv import *
 import numpy as np
 import gurobipy as gp
@@ -11,7 +12,12 @@ from datetime import datetime
 
 GRB = gp.GRB
 
-filename = "output/msource_value_dic_12-22-2022-14-56-38.pkl"
+if len(sys.argv[1]) > 1:
+    filename = sys.argv[1]
+else:
+    filename = "output/msource_value_dic_12-22-2022-18-08-46.pkl"
+
+print("Reading from: " + filename)
 
 with open(filename, 'rb') as f:
     output_obj = pkl.load(f)
@@ -22,12 +28,12 @@ with open(filename, 'rb') as f:
 
     off_times = np.array([np.Inf, np.Inf]) if cfg['mdp_env_params']['off_times'] == "no_disrup" else np.array(cfg['mdp_env_params']['off_times'])
 
-    sourcingEnv = SourcingEnv(
-        lambda_arrival = model_params['mdp_env_params']['lambda'], # or 10
-        procurement_cost_vec = np.array(model_params['mdp_env_params']['procurement_cost_vec']),
-        supplier_lead_times_vec = np.array(model_params['mdp_env_params']['supplier_lead_times_vec']),
-        on_times = np.array(model_params['mdp_env_params']['on_times']), 
-        off_times = off_times)
+    # sourcingEnv = SourcingEnv(
+    #     lambda_arrival = model_params['mdp_env_params']['lambda'], # or 10
+    #     procurement_cost_vec = np.array(model_params['mdp_env_params']['procurement_cost_vec']),
+    #     supplier_lead_times_vec = np.array(model_params['mdp_env_params']['supplier_lead_times_vec']),
+    #     on_times = np.array(model_params['mdp_env_params']['on_times']), 
+    #     off_times = off_times)
 
 state_s = list(range(BACKORDER_MAX_LP, MAX_INVEN_LP))
 state_backorders = list(itertools.product(range(MAX_INVEN_LP - BACKORDER_MAX_LP), range(sourcingEnv.n_suppliers)))

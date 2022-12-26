@@ -98,8 +98,8 @@ class SourcingEnv():
         lead_time_comps = np.multiply(order_quantity_vec + outstd_orders, mu_lt_rate)
         lead_time_comp = np.sum(lead_time_comps)
 
-        mu_off_comp = np.sum(np.multiply(1 - onoff_status, mu_off_times))
-        mu_on_comp = np.sum(np.multiply(onoff_status, mu_on_times))
+        mu_off_comp = np.sum(np.multiply(onoff_status, mu_off_times))
+        mu_on_comp = np.sum(np.multiply(1 - onoff_status, mu_on_times))
 
         prob_demand_arrival = lambda_arrival + lead_time_comp + mu_off_comp + mu_on_comp
 
@@ -129,10 +129,10 @@ class SourcingEnv():
             onoff_status = state_obj.flag_on_off[k]
             assert onoff_status > -1, "Assertion Failed: On / off flag outside bound (0, 1)"
             if event_type == Event.SUPPLIER_ON:
-                return (1 - onoff_status) * self.mu_off_times[k] * tau_event
+                return (1 - onoff_status) * self.mu_on_times[k] * tau_event
             
             if event_type == Event.SUPPLIER_OFF:
-                return onoff_status * self.mu_on_times[k] * tau_event
+                return onoff_status * self.mu_off_times[k] * tau_event
         
         return 0
     
@@ -203,8 +203,9 @@ class SourcingEnv():
         elif 0 < i < 1 + self.n_suppliers:
             event = Event.SUPPLY_ARRIVAL
             supplier_index = i-1
-            next_state.s = next_state.s + next_state.n_backorders[supplier_index]
-            next_state.n_backorders[supplier_index] = 0
+            if next_state.n_backorders[supplier_index] > 0:
+                next_state.s = next_state.s + 1  # next_state.n_backorders[supplier_index]
+                next_state.n_backorders[supplier_index] -= 1
         elif 1 + self.n_suppliers - 1 < i < 1 + 2*self.n_suppliers:
             event = Event.SUPPLIER_ON
             supplier_index = i - 1 - self.n_suppliers
@@ -232,7 +233,9 @@ class SourcingEnv():
             assert supplier_index > -1, "Assertion Failed: supplier_index < 0"
         else:
             assert event in [Event.DEMAND_ARRIVAL, Event.NO_EVENT], "AssertAssertion Failed: Unknown event."
-
+        
+        tau_event = self.compute_event_arrival_time(order_quantity_vec)
+        next_state.state_tau = tau_event
         self.current_state = next_state
         
         return next_state, event, i, event_probs, supplier_index

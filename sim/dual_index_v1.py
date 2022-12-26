@@ -19,10 +19,22 @@ def dual_index_policy_v1(sourcingEnv, **kwargs):
     ord_vec = np.zeros(len(sourcingEnv.supplier_lead_times_vec))
     # print("Opt vec: " + str(ord_vec_opt))
     # Safety cap
-    if sourcingEnv.current_state.s >= safety_factor_di:
+    if sourcingEnv.current_state.s >= safety_factor_di:# and False:
+        # kwargs1 = {"periods" : 30,
+        #     "nested_mc_iters" : 30,
+        #     "supplier_index": 1
+        # }
+        # ord_vec_opt = single_source_orderupto_policy(sourcingEnv, **kwargs1)
         ord_vec_opt = ss_policy_fastest_supp_backlog(sourcingEnv)
-    elif sourcingEnv.current_state.s < 0:
-        ord_vec_opt = ss_policy_fastest_supp_backlog(sourcingEnv)
+        return ord_vec_opt
+    elif sourcingEnv.current_state.s < 0:# and False:
+        kwargs1 = {"periods" : 30,
+            "nested_mc_iters" : 30,
+            "supplier_index": 1
+        }
+        ord_vec_opt = single_source_orderupto_policy(sourcingEnv, **kwargs1)
+        # ord_vec_opt = ss_policy_fastest_supp_backlog(sourcingEnv)
+        return ord_vec_opt
         # return ord_vec_opt
     # elif False:
     else:

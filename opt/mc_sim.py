@@ -9,63 +9,6 @@ from datetime import datetime
 import pickle
 from tqdm import tqdm
 
-def mc_episode_with_policy(sourcingEnv, 
-    policy = myopic2_policy, 
-    **kwargs):
-
-    b_penalty = B_PENALTY if "b_penalty" not in kwargs else kwargs["b_penalty"]
-    h_cost = H_COST if "h_cost" not in kwargs else kwargs["h_cost"]
-    periods = PERIODS if "periods" not in kwargs else kwargs["periods"]
-    
-    sourcingEnv.reset()
-
-    cost = cost_calc(sourcingEnv.current_state, h_cost = h_cost, b_penalty = b_penalty)
-    total_costs = [cost]
-    for i in range(periods):
-        
-        policy_action = policy(sourcingEnv, **kwargs)
-        next_state, event, event_index, probs, supplier_index = sourcingEnv.step(policy_action)
-        cost = cost_calc(next_state, h_cost = h_cost, b_penalty = b_penalty)
-        
-        if hasattr(sourcingEnv, 'fixed_costs)'):
-            fixed_costs = get_fixed_costs(policy_action, fixed_costs_vec = sourcingEnv.fixed_costs)
-        else:
-            fixed_costs = [0]*sourcingEnv.n_suppliers
-        
-        procurement_cost_if_avail = np.multiply(policy_action, sourcingEnv.procurement_cost_vec)
-        procurement_cost = np.sum(np.multiply(procurement_cost_if_avail, sourcingEnv.current_state.flag_on_off))
-
-        total_procurement_cost = procurement_cost + np.sum(fixed_costs)
-        total_cost = cost + total_procurement_cost
-        total_costs.append(total_cost)
-
-    avg_cost_per_period = np.mean(total_costs)
-
-    return total_costs, avg_cost_per_period
-
-def mc_with_policy(sourcingEnv, 
-    start_state = False,
-    policy_callback = myopic2_policy, 
-    nested_mc_iters = NESTED_MC_ITERS,
-    use_tqdm = False,
-    **kwargs):
-    
-    mc_avg_costs = []
-
-    for i in tqdm(range(nested_mc_iters)) if use_tqdm else range(nested_mc_iters):
-        if start_state != False:
-            sourcingEnv.current_state = start_state
-
-        start_time = time.time()
-        _, avg_cost = mc_episode_with_policy(sourcingEnv, policy = policy_callback, **kwargs)
-        mc_avg_costs.append(avg_cost)
-        run_time = time.time() - start_time
-        # if i % 100 == 0:
-        #     print("time per 100 iter: " + str(run_time))
-    
-    return mc_avg_costs
-
-
 def approx_value_iteration(sourcingEnv, initial_state, 
     max_steps = MAX_STEPS, 
     num_episodes = MC_EPISODES,
@@ -94,6 +37,8 @@ def approx_value_iteration(sourcingEnv, initial_state,
         
     # initialize states, ex. dual sourcing 40k, 3x sourcing 800k states
     state_value_dic = {}
+    action_policy_dic = {}
+
     sourcingEnv.reset()
 
     if cache_value_est:
@@ -135,10 +80,10 @@ def approx_value_iteration(sourcingEnv, initial_state,
                             if cache_value_est and state_key in cache_value_dic:
                                 value_estimates = cache_value_dic[state_key]
                             elif cache_value_est and state_key not in cache_value_dic:
-                                value_estimates = mc_with_policy(sourcingEnvCopy, potential_state, big_s = big_s, small_s = small_s, policy_callback = ssn_policy)
+                                value_estimates = optimistic_lowest_cost_func(sourcingEnvCopy, potential_state, big_s, small_s)
                                 cache_value_dic[state_key] = value_estimates
                             else:
-                                value_estimates = mc_with_policy(sourcingEnvCopy, potential_state, big_s = big_s, small_s = small_s, policy_callback = ssn_policy)
+                                value_estimates = optimistic_lowest_cost_func(sourcingEnvCopy, potential_state, big_s, small_s)
                             
                             avg_value_estimate = -np.mean(value_estimates)
                             
@@ -200,6 +145,7 @@ def approx_value_iteration(sourcingEnv, initial_state,
                 selected_action = np.array([0, 0])
             
             next_state, event, _, _, supplier_index = sourcingEnv.step(selected_action)
+            action_policy_dic[state_add] = selected_action
             
             step_time = time.time() - step_start_time
             
@@ -217,7 +163,10 @@ def approx_value_iteration(sourcingEnv, initial_state,
 
         # model save every save_interval intervals
         write_path = 'output/msource_value_dic_{dt}_interval.pkl'.format(dt = str(model_start_date_time)) if 'larkin' in platform.node() else 'output/msource_value_dic_{dt}.pkl'.format(dt = str(model_start_date_time))
-        output_obj = {"state_value_dic": state_value_dic, "model_params": model_args_dic, "mdp_env": sourcingEnv}
+        output_obj = {"state_value_dic": state_value_dic, 
+            "model_params": model_args_dic, 
+            "mdp_env": sourcingEnv,
+            "pol_dic": action_policy_dic}
 
         with open(write_path, 'wb') as handle:
             pickle.dump(output_obj, handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -230,15 +179,23 @@ def approx_value_iteration(sourcingEnv, initial_state,
         else:
             print("############ episode: {ep} | elapsed time: {time}".format(ep = str(e), time = str(episode_run_time) ))
     
-    return {"state_value_dic": state_value_dic, "model_params": model_args_dic, "mdp_env": sourcingEnv}
+    return {"state_value_dic": state_value_dic, "model_params": model_args_dic, "mdp_env": sourcingEnv, "pol_dic": action_policy_dic}
 
+
+def optimistic_lowest_cost_func(sourcingEnv, potential_state, big_s, small_s):
+    eval_costs_ss = mc_with_policy(sourcingEnv, potential_state, big_s = big_s, small_s = small_s, policy_callback = ss_policy_fastest_supp_backlog)
+    # eval_costs_di = mc_with_policy(sourcingEnv, potential_state, big_s = big_s, small_s = small_s, policy_callback = dual_index_policy)
+    eval_costs_s0 = mc_with_policy(sourcingEnv, potential_state, big_s = big_s, small_s = small_s, policy_callback = single_source_orderupto_policy, supplier_index = 0)
+    eval_costs_s1 = mc_with_policy(sourcingEnv, potential_state, big_s = big_s, small_s = small_s, policy_callback = single_source_orderupto_policy, supplier_index = 1)
+    value_estimates = np.min([np.mean(eval_costs_ss), np.mean(eval_costs_s0), np.mean(eval_costs_s1)])
+    return value_estimates
 
 def find_opt_ss_policy_via_mc(sourcingEnv, 
     periods = PERIODS,
     nested_mc_iters = NESTED_MC_ITERS,
     h_cost = H_COST,
     b_penalty = B_PENALTY,
-    max_S = MAX_INVEN):
+    max_S = BIG_S):
 
     best_val = -np.Inf
     best_small_s = 0

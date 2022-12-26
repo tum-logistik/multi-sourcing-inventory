@@ -38,14 +38,16 @@ if __name__ == '__main__':
 
     print ("Finding sS* policy")
     best_small_s, best_big_s, best_val = find_opt_ss_policy_via_mc(sourcingEnv,
-        periods = 3,
-        nested_mc_iters = 4,
+        periods = 30,
+        nested_mc_iters = 100,
         h_cost = H_COST,
         b_penalty = B_PENALTY,
-        max_S = 3)
+        max_S = BIG_S)
 
     print("sS* policy: " + str((best_small_s, best_big_s, best_val)))
-    output_dic = approx_value_iteration(sourcingEnv, s_initial, big_s = best_big_s, small_s = best_small_s)
+    output_dic = approx_value_iteration(sourcingEnv, s_initial, 
+        big_s = best_big_s, 
+        small_s = best_small_s)
 
     output_dic['model_params']['git_commit'] = sha
     output_dic['model_params']['branch_name'] = branch_name
@@ -71,22 +73,15 @@ if __name__ == '__main__':
     
     output_dic['approx_di_cost'] = np.mean(np.array(mc_avg_costs))
 
-    eval_costs = mc_with_policy(sourcingEnv, 
-        periods = output_dic['model_params']['algo_params']['periods'],
-        nested_mc_iters = output_dic['model_params']['algo_params']['nested_mc_iters'],
-        big_s = output_dic['model_params']['policy_params']['big_s'],
-        small_s = output_dic['model_params']['policy_params']['small_s'],
-        h_cost = output_dic['model_params']['policy_params']['h_cost'],
-        b_penalty = output_dic['model_params']['policy_params']['b_penalty'],
-        policy_callback=dual_index_policy,
-        use_tqdm = True)
+    print("Running ADP eval: writing temp file to : " + write_path)
+    with open(write_path, 'wb') as handle:
+        pickle.dump(output_dic, handle, protocol=pickle.HIGHEST_PROTOCOL)
     
     kwargs = {
         "value_dic": output_dic["state_value_dic"], 
-        "periods": 10, 
-        "periods_val_it": 1,
-        "nested_mc_iters": 30,
-        "max_stock": BIG_S,
+        "periods": 30, 
+        "periods_val_it": 10,
+        "nested_mc_iters": 10,
         "discount_fac": DISCOUNT_FAC,
         "h_cost": output_dic['model_params']['policy_params']['h_cost'],
         "b_penalty": output_dic['model_params']['policy_params']['b_penalty'],
@@ -95,13 +90,14 @@ if __name__ == '__main__':
         "safe_factor": SAFE_FACTOR,
         "sub_eval_periods": SUB_EVAL_PERIODS,
         "sub_nested_mc_iter": SUB_NESTED_MC_ITER,
-        "max_stock": 2,
-        "approx_eval": True
+        "max_stock": BIG_S,
+        "approx_eval": True,
+        "pol_dic": output_dic["pol_dic"]
     }
 
     mc_avg_costs = mc_with_policy(sourcingEnv, 
         use_tqdm = True,
-        policy_callback = eval_policy_from_value_dic,
+        policy_callback = eval_policy_from_policy_dic,
         **kwargs)
 
     eval_costs_scaled = np.mean(mc_avg_costs)

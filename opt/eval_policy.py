@@ -177,10 +177,12 @@ def lp_mdp_policy(sourcingEnv, **kwargs):
 
     state_key = sourcingEnv.current_state.get_nested_list_repr()
 
-    if state_key in lp_dic and np.sum(lp_dic[state_key]) != 0:
+    # if state_key in lp_dic and np.sum(lp_dic[state_key]) != 0:
+    # if state_key in lp_dic and sourcingEnv.current_state.s > 0:
+    if state_key in lp_dic:
         order_vec = np.array(lp_dic[state_key])
         return order_vec
     else:
-        order_vec = eval_policy_from_value_dic(sourcingEnv, **kwargs)
+        order_vec = dual_index_policy(sourcingEnv, **kwargs)
 
     return order_vec

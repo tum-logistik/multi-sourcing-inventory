@@ -58,6 +58,7 @@ if __name__ == '__main__':
         max_order = 6, # BIG_S,
         policy_callback=dummy_explore_policy,
         use_tqdm = True,
+        debug_flag = True,
         **kwargs
     )
 

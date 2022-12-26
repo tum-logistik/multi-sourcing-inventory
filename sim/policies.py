@@ -283,14 +283,17 @@ def mc_episode_with_policy(sourcingEnv,
     h_cost = H_COST if "h_cost" not in kwargs else kwargs["h_cost"]
     periods = PERIODS if "periods" not in kwargs else kwargs["periods"]
     norm_m_flag = True if "norm_m_flag" not in kwargs else kwargs["norm_m_flag"]
-    debug_flag = True if "debug_flag" not in kwargs else kwargs["debug_flag"]
+    debug_flag = False if "debug_flag" not in kwargs else kwargs["debug_flag"]
     
     sourcingEnv.reset()
 
     # cost = cost_calc(sourcingEnv.current_state, h_cost = h_cost, b_penalty = b_penalty)
     total_costs = []
-    event_tracker = []
     tau_sum = 0.0
+    
+    if debug_flag:
+        event_tracker = []
+    
     for i in range(periods):
         
         policy_action = policy(sourcingEnv, **kwargs)
@@ -311,10 +314,11 @@ def mc_episode_with_policy(sourcingEnv,
 
         next_state, event, event_index, probs, supplier_index = sourcingEnv.step(policy_action)
         tau_sum += sourcingEnv.current_state.state_tau
-        event_tracker.append([event, event_index, policy_action, next_state.get_nested_list_repr(), total_cost ])
+        
 
         # Print diagnostic
         if debug_flag:
+            event_tracker.append([event, event_index, policy_action, next_state.get_nested_list_repr(), total_cost ])
             count_demand = sum(map(lambda x : x[0] == Event.DEMAND_ARRIVAL, event_tracker))
             count_supply_0 = sum(map(lambda x : x[0] == Event.SUPPLY_ARRIVAL and x[1] == 1, event_tracker))
             count_supply_1 = sum(map(lambda x : x[0] == Event.SUPPLY_ARRIVAL and x[1] == 2, event_tracker))

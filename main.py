@@ -92,6 +92,21 @@ if __name__ == '__main__':
     
     output_dic['ssn_cost'] = np.mean(np.array(mc_avg_costs_ssn))
 
+    myopic_cost = mc_with_policy(sourcingEnv, 
+        periods = EVAL_PERIODS,
+        nested_mc_iters = 5,
+        big_s = best_small_s,
+        small_s = best_big_s,
+        max_order = BIG_S,
+        policy_callback=myopic2_policy,
+    use_tqdm = True)
+
+    print(np.mean(myopic_cost))
+    print(np.median(np.array(myopic_cost)))
+    print(np.std(np.array(myopic_cost)))
+
+    output_dic['myopic_cost'] = np.mean(np.array(myopic_cost))
+
     print("Running ADP eval: writing temp file to : " + write_path)
     with open(write_path, 'wb') as handle:
         pickle.dump(output_dic, handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -128,7 +143,7 @@ if __name__ == '__main__':
     print("algorithm complete, wrote file to: " + write_path)
 
     print("Sending emailend email")
-    highligh_dic_keys = ['ssn_cost', 'ss_cost', 'di_cost', 'adp_cost']
+    highligh_dic_keys = ['ssn_cost', 'ss_cost', 'myopic_cost', 'di_cost', 'adp_cost']
     id_dic_keys = ['model_params']
     
     results_dic = {key: output_dic[key] for key in highligh_dic_keys}
@@ -144,4 +159,6 @@ if __name__ == '__main__':
         print("Email filed to send!")
 
     # execute LP solver
+    
+
     

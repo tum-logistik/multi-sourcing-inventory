@@ -6,8 +6,13 @@ from opt.mc_sim import *
 from opt.eval_policy import *
 import pickle as pkl
 from opt.eval_policy import *
+from env.email_functions import *
 
 if __name__ == '__main__':
+
+
+    print("testing send email")
+    send_email()
 
     print("#### Running Debug Scenario #####")
     filename = "output/msource_value_dic_12-21-2022-23-09-40.pkl"

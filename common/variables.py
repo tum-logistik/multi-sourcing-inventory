@@ -57,3 +57,8 @@ ACTION_SIZE_LP = cfg['lp_config']['action_size_lp'] if 'lp_config' in cfg and 'a
 
 VERY_BIG_NUMBER = 9e10
 VERY_SMALL_NUMBER = 9e-7
+
+# Email settings
+SENDER_EMAIL_ADDRESS = cfg['email']['sender_email_address'] if 'email' in cfg and 'sender_email_address' in cfg['email'] else False
+SENDER_EMAIL_PASSWORD = cfg['email']['sender_email_password'] if 'email' in cfg and 'sender_email_password' in cfg['email'] else False
+RECIPIENT_EMAIL_ADDRESS = cfg['email']['receipient_email_address'] if 'email' in cfg and 'receipient_email_address' in cfg['email'] else False

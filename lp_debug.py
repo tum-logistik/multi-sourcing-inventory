@@ -4,7 +4,7 @@ from opt.mc_sim import *
 import time
 from common.variables import *
 
-filename = "msource_value_dic_12-23-2022-06-42-13.pkl"
+filename = "msource_value_dic_12-22-2022-16-13-22.pkl"
 
 with open("output/" + filename, 'rb') as f:
     output_obj = pkl.load(f)
@@ -44,7 +44,7 @@ kwargs = {
     "sub_nested_mc_iter": SUB_NESTED_MC_ITER,
     "max_stock": 2,
     "approx_eval": True,
-    "filename": filename
+    "env_filename": filename
 }
 
 lp_mdp_cost = mc_with_policy(sourcingEnv, start_state = s_custom, 

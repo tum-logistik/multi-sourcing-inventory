@@ -14,7 +14,8 @@ def send_email(sender_address = SENDER_EMAIL_ADDRESS,
         recipient_email_address = RECIPIENT_EMAIL_ADDRESS,
         file_id = "dummy_id",
         mail_content = "dummy message",
-        files = []
+        files = [],
+        subject_header = 'DS-Sim: '
     ):
 
     host_name = socket.gethostname()
@@ -26,7 +27,7 @@ def send_email(sender_address = SENDER_EMAIL_ADDRESS,
     message = MIMEMultipart()
     message['From'] = sender_address
     message['To'] = recipient_email_address
-    message['Subject'] = 'DS-Sim: ' + host_name + " / " + file_id # The subject line
+    message['Subject'] = subject_header + host_name + " / " + file_id # The subject line
     
     ## The body and the attachments for the mail
     message.attach(MIMEText(mail_content, 'plain'))

@@ -87,14 +87,27 @@ if __name__ == '__main__':
     
     output_dic['ss_cost'] = np.mean(np.array(mc_avg_costs_ss_prime))
 
-    mc_avg_costs_ssn = mc_with_policy(sourcingEnv, 
-        periods = output_dic['model_params']['eval_params']['eval_periods'],
-        policy_callback = single_source_orderupto_policy, 
-        big_s = best_big_s,
-        small_s = best_small_s,
-        use_tqdm = False)
+    single_supplier_mean_costs = []
+    sing_supp_mean_cost = np.Inf
+    for s in range(sourcingEnv.n_suppliers):
+
+        kwargs = {"periods" : EVAL_PERIODS,
+            "nested_mc_iters" : NESTED_MC_ITERS,
+            "supplier_index": s
+        }
+
+        single_supplier_costs = mc_with_policy(sourcingEnv, 
+            use_tqdm = True,
+            policy_callback = single_source_orderupto_policy,
+            **kwargs)
+        
+        sing_supp_mean_cost_i = np.mean(single_supplier_costs)
+        single_supplier_mean_costs.append(sing_supp_mean_cost_i)
+        if sing_supp_mean_cost_i < sing_supp_mean_cost:
+            single_supplier_costs_select = single_supplier_costs
+            sing_supp_mean_cost = sing_supp_mean_cost_i
     
-    output_dic['ssn_cost'] = np.mean(np.array(mc_avg_costs_ssn))
+    output_dic['ssn_cost'] = np.mean(np.min(single_supplier_mean_costs))
 
     myopic_cost = mc_with_policy(sourcingEnv, 
         periods = EVAL_PERIODS,
@@ -158,7 +171,7 @@ if __name__ == '__main__':
     print(string_content)
 
     try:
-        send_email(file_id = output_obj_path, mail_content = string_content, files = [output_dic])
+        send_email(file_id = output_obj_path, mail_content = string_content, files = [write_path], subject_header = "DS-sim-inter: " )
     except:
         print("Email filed to send!")
 

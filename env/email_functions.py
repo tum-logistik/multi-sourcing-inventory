@@ -11,8 +11,7 @@ def send_email(sender_address = SENDER_EMAIL_ADDRESS,
         file_id = "dummy_id",
         mail_content = "dummy message"
     ):
-
-    node_name = platform.node()
+    
     host_name = socket.gethostname()
 
     if not sender_address or not sender_pass or not recipient_email_address:
@@ -22,7 +21,7 @@ def send_email(sender_address = SENDER_EMAIL_ADDRESS,
     message = MIMEMultipart()
     message['From'] = sender_address
     message['To'] = recipient_email_address
-    message['Subject'] = 'DS-Sim: ' + file_id + " / " + host_name # The subject line
+    message['Subject'] = 'DS-Sim: ' + host_name + " / " + file_id # The subject line
     
     ## The body and the attachments for the mail
     message.attach(MIMEText(mail_content, 'plain'))

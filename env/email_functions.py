@@ -4,14 +4,19 @@ from email.mime.text import MIMEText
 from common.variables import *
 import platform
 import socket
+from email.mime.application import MIMEApplication
+from email.mime.multipart import MIMEMultipart
+from os.path import basename
+
 
 def send_email(sender_address = SENDER_EMAIL_ADDRESS,
         sender_pass = SENDER_EMAIL_PASSWORD,
         recipient_email_address = RECIPIENT_EMAIL_ADDRESS,
         file_id = "dummy_id",
-        mail_content = "dummy message"
+        mail_content = "dummy message",
+        files = []
     ):
-    
+
     host_name = socket.gethostname()
 
     if not sender_address or not sender_pass or not recipient_email_address:
@@ -26,6 +31,16 @@ def send_email(sender_address = SENDER_EMAIL_ADDRESS,
     ## The body and the attachments for the mail
     message.attach(MIMEText(mail_content, 'plain'))
 
+    for f in files:
+        with open(f, "rb") as fil:
+            part = MIMEApplication(
+                fil.read(),
+                Name=basename(f)
+            )
+        # After the file is closed
+        part['Content-Disposition'] = 'attachment; filename="%s"' % basename(f)
+        message.attach(part)
+
     # Create SMTP session for sending the mail
     session = smtplib.SMTP('smtp.gmail.com', 587) # use gmail with port
     session.starttls() #enable security
@@ -36,6 +51,10 @@ def send_email(sender_address = SENDER_EMAIL_ADDRESS,
 
     print("message sent to: " +  message['To'])
     print('Subject: ' + message['Subject'])
+
+    
+    
+
 
     return True
 

@@ -10,6 +10,7 @@ import importlib
 from opt.eval_policy import *
 from env.email_functions import *
 import json
+from milp.lp_solver import *
 
 if __name__ == '__main__':
 
@@ -61,7 +62,7 @@ if __name__ == '__main__':
 
     now = datetime.now()
     date_time = now.strftime("%m-%d-%Y-%H-%M-%S")
-    
+
     output_obj_path = 'msource_value_dic_{dt}.pkl'.format(dt = str(date_time)) if 'larkin' in platform.node() else 'msource_value_dic_{dt}.pkl'.format(dt = str(date_time))
     write_path = "output/" + output_obj_path
 
@@ -156,11 +157,47 @@ if __name__ == '__main__':
     print(string_content)
 
     try:
-        send_email(file_id = output_obj_path, mail_content = string_content)
+        send_email(file_id = output_obj_path, mail_content = string_content, files = [output_dic])
     except:
         print("Email filed to send!")
 
-    # execute LP solver
+
+    ##### execute LP solver
+
+    lp_sol, write_path_lp = lp_solver(write_path)
+
+    kwargs_lp = {
+        "value_dic": output_dic["state_value_dic"], 
+        "periods": EVAL_PERIODS, 
+        "periods_val_it": 1,
+        "nested_mc_iters": NESTED_MC_ITERS,
+        "discount_fac": DISCOUNT_FAC,
+        "h_cost": output_dic['model_params']['policy_params']['h_cost'],
+        "b_penalty": output_dic['model_params']['policy_params']['b_penalty'],
+        "n_visit_lim": N_VISIT_LIM,
+        "default_ss_policy": ss_policy_fastest_supp_backlog,
+        "safe_factor": SAFE_FACTOR,
+        "sub_eval_periods": SUB_EVAL_PERIODS,
+        "sub_nested_mc_iter": SUB_NESTED_MC_ITER,
+        "max_stock": BIG_S,
+        "approx_eval": True,
+        "pol_dic": output_dic["pol_dic"],
+        "env_filename": output_obj_path
+    }
+
+    lp_mdp_cost = mc_with_policy(sourcingEnv, 
+        policy_callback=lp_mdp_policy,
+        use_tqdm = True,
+        **kwargs_lp)
+
+    output_dic['lp_cost'] = np.mean(lp_mdp_cost)
+
+    highligh_dic_keys = ['ssn_cost', 'ss_cost', 'lp_cost', 'myopic_cost', 'di_cost', 'adp_cost']
+    results_dic = {key: output_dic[key] for key in highligh_dic_keys}
+    string_content = str(results_dic) + "\n\n" + json.dumps(id_info_dic, indent = 2)
+
+    send_email(file_id = output_obj_path, mail_content = string_content, files = [write_path, write_path_lp])
+
 
 
     

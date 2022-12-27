@@ -12,10 +12,10 @@ from datetime import datetime
 
 GRB = gp.GRB
 
-if len(sys.argv[1]) > 1:
-    filename = sys.argv[1]
-else:
-    filename = "output/msource_value_dic_12-22-2022-18-08-46.pkl"
+# if len(sys.argv[1]) > 1:
+#     filename = sys.argv[1]
+# else:
+#     filename = "output/msource_value_dic_12-22-2022-18-08-46.pkl"
 
 
 def lp_solver(filename):
@@ -206,6 +206,6 @@ def lp_solver(filename):
     with open(write_path, 'wb') as handle:
         pkl.dump(nz_sol, handle, protocol=pkl.HIGHEST_PROTOCOL)
     
-    return nz_sol
+    return nz_sol, write_path
 
 

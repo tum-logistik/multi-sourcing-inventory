@@ -205,5 +205,7 @@ def lp_solver(filename):
 
     with open(write_path, 'wb') as handle:
         pkl.dump(nz_sol, handle, protocol=pkl.HIGHEST_PROTOCOL)
+    
+    return nz_sol
 
 

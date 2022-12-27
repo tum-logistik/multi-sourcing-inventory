@@ -3,6 +3,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from common.variables import *
 import platform
+import socket
 
 def send_email(sender_address = SENDER_EMAIL_ADDRESS,
         sender_pass = SENDER_EMAIL_PASSWORD,
@@ -12,6 +13,7 @@ def send_email(sender_address = SENDER_EMAIL_ADDRESS,
     ):
 
     node_name = platform.node()
+    host_name = socket.gethostname()
 
     if not sender_address or not sender_pass or not recipient_email_address:
         print("No email fields specified in yaml config file! No email sent.")
@@ -20,7 +22,7 @@ def send_email(sender_address = SENDER_EMAIL_ADDRESS,
     message = MIMEMultipart()
     message['From'] = sender_address
     message['To'] = recipient_email_address
-    message['Subject'] = 'DS-Sim: ' + file_id + " / " + node_name # The subject line
+    message['Subject'] = 'DS-Sim: ' + file_id + " / " + host_name # The subject line
     
     ## The body and the attachments for the mail
     message.attach(MIMEText(mail_content, 'plain'))

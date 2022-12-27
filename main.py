@@ -185,6 +185,9 @@ if __name__ == '__main__':
         "env_filename": output_obj_path
     }
 
+    print("lp solution")
+    print(lp_sol)
+
     lp_mdp_cost = mc_with_policy(sourcingEnv, 
         policy_callback=lp_mdp_policy,
         use_tqdm = True,
@@ -196,7 +199,10 @@ if __name__ == '__main__':
     results_dic = {key: output_dic[key] for key in highligh_dic_keys}
     string_content = str(results_dic) + "\n\n" + json.dumps(id_info_dic, indent = 2)
 
-    send_email(file_id = output_obj_path, mail_content = string_content, files = [write_path, write_path_lp])
+    try:
+        send_email(file_id = output_obj_path, mail_content = string_content, files = [write_path, write_path_lp])
+    except:
+        print("LP mail filed to send!")
 
 
 

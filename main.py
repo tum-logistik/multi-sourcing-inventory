@@ -88,7 +88,7 @@ if __name__ == '__main__':
     output_dic['ss_cost'] = np.mean(np.array(mc_avg_costs_ss_prime))
 
     mc_avg_costs_ssn = mc_with_policy(sourcingEnv, 
-        periods = output_dic['model_params']['algo_params']['periods'],
+        periods = output_dic['model_params']['eval_params']['eval_periods'],
         policy_callback = single_source_orderupto_policy, 
         big_s = best_big_s,
         small_s = best_small_s,

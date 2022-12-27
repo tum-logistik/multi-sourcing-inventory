@@ -56,10 +56,12 @@ if __name__ == '__main__':
 
     output_dic['model_params']['policy_params']['big_s'] = best_big_s
     output_dic['model_params']['policy_params']['small_s'] = best_small_s
+    node_name = platform.node()
+    output_dic['model_params']['docker_id'] = node_name
 
     now = datetime.now()
     date_time = now.strftime("%m-%d-%Y-%H-%M-%S")
-
+    
     output_obj_path = 'msource_value_dic_{dt}.pkl'.format(dt = str(date_time)) if 'larkin' in platform.node() else 'msource_value_dic_{dt}.pkl'.format(dt = str(date_time))
     write_path = "output/" + output_obj_path
 
@@ -159,6 +161,6 @@ if __name__ == '__main__':
         print("Email filed to send!")
 
     # execute LP solver
-    
+
 
     

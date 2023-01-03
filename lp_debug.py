@@ -3,8 +3,12 @@ from opt.eval_policy import *
 from opt.mc_sim import *
 import time
 from common.variables import *
+import sys
 
-filename = "msource_value_dic_12-28-2022-17-30-37.pkl"
+if len(sys.argv[1]) > 1:
+    filename = sys.argv[1]
+else:
+    filename = "output/msource_value_dic_12-22-2022-18-08-46.pkl"
 
 with open("output/" + filename, 'rb') as f:
     output_obj = pkl.load(f)

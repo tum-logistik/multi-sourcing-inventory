@@ -41,6 +41,7 @@ FIXED_COST_VEC = np.array(cfg['mdp_env_params']['fixed_costs'])
 # Evaluation Params
 SAFE_FACTOR = cfg['eval_params']['safe_factor'] if 'eval_params' in cfg and 'safe_factor' in cfg['eval_params'] else 1.0
 N_VISIT_LIM = cfg['eval_params']['n_visit_limit'] if 'eval_params' in cfg and 'safe_factor' in cfg['eval_params'] else 2
+EVAL_PERIODS = cfg['eval_params']['eval_periods'] if 'eval_params' in cfg and 'eval_periods' in cfg['eval_params'] else 100
 SUB_EVAL_PERIODS = cfg['eval_params']['sub_eval_periods'] if 'eval_params' in cfg and 'sub_eval_periods' in cfg['eval_params'] else 1.0
 SUB_NESTED_MC_ITER = cfg['eval_params']['sub_nested_mc_iter'] if 'eval_params' in cfg and 'sub_nested_mc_iter' in cfg['eval_params'] else 1.0
 
@@ -57,3 +58,8 @@ ACTION_SIZE_LP = cfg['lp_config']['action_size_lp'] if 'lp_config' in cfg and 'a
 
 VERY_BIG_NUMBER = 9e10
 VERY_SMALL_NUMBER = 9e-7
+
+# Email settings
+SENDER_EMAIL_ADDRESS = cfg['email']['sender_email_address'] if 'email' in cfg and 'sender_email_address' in cfg['email'] else False
+SENDER_EMAIL_PASSWORD = cfg['email']['sender_email_password'] if 'email' in cfg and 'sender_email_password' in cfg['email'] else False
+RECIPIENT_EMAIL_ADDRESS = cfg['email']['receipient_email_address'] if 'email' in cfg and 'receipient_email_address' in cfg['email'] else False

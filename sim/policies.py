@@ -284,6 +284,7 @@ def mc_episode_with_policy(sourcingEnv,
     periods = PERIODS if "periods" not in kwargs else kwargs["periods"]
     norm_m_flag = True if "norm_m_flag" not in kwargs else kwargs["norm_m_flag"]
     debug_flag = False if "debug_flag" not in kwargs else kwargs["debug_flag"]
+    discount_fac = DISCOUNT_FAC if "discount_fac" not in kwargs else kwargs["discount_fac"]
     
     sourcingEnv.reset()
 
@@ -309,13 +310,13 @@ def mc_episode_with_policy(sourcingEnv,
         procurement_cost = np.sum(np.multiply(procurement_cost_if_avail, sourcingEnv.current_state.flag_on_off))
 
         total_procurement_cost = procurement_cost + np.sum(fixed_costs)
-        total_cost = cost + total_procurement_cost
+        discount_term = np.power(discount_fac, i)
+        total_cost = (cost + total_procurement_cost) * discount_term
         total_costs.append(total_cost)
 
         next_state, event, event_index, probs, supplier_index = sourcingEnv.step(policy_action)
         tau_sum += sourcingEnv.current_state.state_tau
         
-
         # Print diagnostic
         if debug_flag:
             event_tracker.append([event, event_index, policy_action, next_state.get_nested_list_repr(), total_cost ])
@@ -352,7 +353,6 @@ def mc_with_policy(sourcingEnv,
         #     print("time per 100 iter: " + str(run_time))
     
     return mc_avg_costs
-
 
 def dummy_explore_policy(sourcingEnv, **kwargs):
     if sourcingEnv.current_state.s < -1:

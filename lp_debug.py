@@ -3,8 +3,12 @@ from opt.eval_policy import *
 from opt.mc_sim import *
 import time
 from common.variables import *
+import sys
 
-filename = "msource_value_dic_12-23-2022-06-42-13.pkl"
+if len(sys.argv[1]) > 1:
+    filename = sys.argv[1]
+else:
+    filename = "output/msource_value_dic_12-22-2022-18-08-46.pkl"
 
 with open("output/" + filename, 'rb') as f:
     output_obj = pkl.load(f)
@@ -44,7 +48,7 @@ kwargs = {
     "sub_nested_mc_iter": SUB_NESTED_MC_ITER,
     "max_stock": 2,
     "approx_eval": True,
-    "filename": filename
+    "env_filename": filename
 }
 
 lp_mdp_cost = mc_with_policy(sourcingEnv, start_state = s_custom, 

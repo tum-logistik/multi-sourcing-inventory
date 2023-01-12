@@ -157,7 +157,7 @@ def eval_policy_from_value_dic(sourcingEnv,
 
 def lp_mdp_policy(sourcingEnv, **kwargs):
 
-    filename = None if "filename" not in kwargs else kwargs["filename"]
+    filename = None if "env_filename" not in kwargs else kwargs["env_filename"]
     if filename == None:
         print("No LP file detected!")
         return False

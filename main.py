@@ -8,7 +8,9 @@ from datetime import datetime
 import platform
 import importlib 
 from opt.eval_policy import *
-
+from env.email_functions import *
+import json
+from milp.lp_solver import *
 
 if __name__ == '__main__':
 
@@ -45,6 +47,7 @@ if __name__ == '__main__':
         max_S = BIG_S)
 
     print("sS* policy: " + str((best_small_s, best_big_s, best_val)))
+
     output_dic = approx_value_iteration(sourcingEnv, s_initial, 
         big_s = best_big_s, 
         small_s = best_small_s)
@@ -54,12 +57,15 @@ if __name__ == '__main__':
 
     output_dic['model_params']['policy_params']['big_s'] = best_big_s
     output_dic['model_params']['policy_params']['small_s'] = best_small_s
+    node_name = platform.node()
+    output_dic['model_params']['docker_id'] = node_name
 
     now = datetime.now()
     date_time = now.strftime("%m-%d-%Y-%H-%M-%S")
 
-    write_path = 'output/msource_value_dic_{dt}.pkl'.format(dt = str(date_time)) if 'larkin' in platform.node() else 'output/msource_value_dic_{dt}.pkl'.format(dt = str(date_time))
-    
+    output_obj_path = 'msource_value_dic_{dt}.pkl'.format(dt = str(date_time)) if 'larkin' in platform.node() else 'msource_value_dic_{dt}.pkl'.format(dt = str(date_time))
+    write_path = "output/" + output_obj_path
+
     # Evaluate model
     mc_avg_costs = mc_with_policy(sourcingEnv, 
         periods = output_dic['model_params']['algo_params']['periods'],
@@ -71,7 +77,52 @@ if __name__ == '__main__':
         policy_callback=dual_index_policy,
         use_tqdm = True)
     
-    output_dic['approx_di_cost'] = np.mean(np.array(mc_avg_costs))
+    output_dic['di_cost'] = np.mean(np.array(mc_avg_costs))
+
+    mc_avg_costs_ss_prime = mc_with_policy(sourcingEnv, 
+        policy_callback = ss_policy_fastest_supp_backlog, 
+        big_s = best_big_s,
+        small_s = best_small_s,
+        use_tqdm = False)
+    
+    output_dic['ss_cost'] = np.mean(np.array(mc_avg_costs_ss_prime))
+
+    single_supplier_mean_costs = []
+    sing_supp_mean_cost = np.Inf
+    for s in range(sourcingEnv.n_suppliers):
+
+        kwargs = {"periods" : EVAL_PERIODS,
+            "nested_mc_iters" : NESTED_MC_ITERS,
+            "supplier_index": s
+        }
+
+        single_supplier_costs = mc_with_policy(sourcingEnv, 
+            use_tqdm = True,
+            policy_callback = single_source_orderupto_policy,
+            **kwargs)
+        
+        sing_supp_mean_cost_i = np.mean(single_supplier_costs)
+        single_supplier_mean_costs.append(sing_supp_mean_cost_i)
+        if sing_supp_mean_cost_i < sing_supp_mean_cost:
+            single_supplier_costs_select = single_supplier_costs
+            sing_supp_mean_cost = sing_supp_mean_cost_i
+    
+    output_dic['ssn_cost'] = np.mean(np.min(single_supplier_mean_costs))
+
+    myopic_cost = mc_with_policy(sourcingEnv, 
+        periods = EVAL_PERIODS,
+        nested_mc_iters = 5,
+        big_s = best_small_s,
+        small_s = best_big_s,
+        max_order = BIG_S,
+        policy_callback=myopic2_policy,
+    use_tqdm = True)
+
+    print(np.mean(myopic_cost))
+    print(np.median(np.array(myopic_cost)))
+    print(np.std(np.array(myopic_cost)))
+
+    output_dic['myopic_cost'] = np.mean(np.array(myopic_cost))
 
     print("Running ADP eval: writing temp file to : " + write_path)
     with open(write_path, 'wb') as handle:
@@ -79,9 +130,9 @@ if __name__ == '__main__':
     
     kwargs = {
         "value_dic": output_dic["state_value_dic"], 
-        "periods": 30, 
-        "periods_val_it": 10,
-        "nested_mc_iters": 10,
+        "periods": EVAL_PERIODS, 
+        "periods_val_it": 1,
+        "nested_mc_iters": NESTED_MC_ITERS,
         "discount_fac": DISCOUNT_FAC,
         "h_cost": output_dic['model_params']['policy_params']['h_cost'],
         "b_penalty": output_dic['model_params']['policy_params']['b_penalty'],
@@ -103,15 +154,70 @@ if __name__ == '__main__':
     eval_costs_scaled = np.mean(mc_avg_costs)
     output_dic['adp_cost'] = np.mean(eval_costs_scaled)
 
-    mc_avg_costs_ss_prime = mc_with_policy(sourcingEnv, 
-        policy_callback = ss_policy_fastest_supp_backlog, 
-        big_s = best_big_s,
-        small_s = best_small_s,
-        use_tqdm = False)
-    
-    output_dic['ss_cost'] = np.mean(np.array(mc_avg_costs_ss_prime))
-
     with open(write_path, 'wb') as handle:
         pickle.dump(output_dic, handle, protocol=pickle.HIGHEST_PROTOCOL)
     
     print("algorithm complete, wrote file to: " + write_path)
+
+    print("Sending emailend email")
+    highligh_dic_keys = ['ssn_cost', 'ss_cost', 'myopic_cost', 'di_cost', 'adp_cost']
+    id_dic_keys = ['model_params']
+    
+    results_dic = {key: output_dic[key] for key in highligh_dic_keys}
+    id_info_dic = {key: output_dic[key] for key in id_dic_keys}
+
+    string_content = str(results_dic) + "\n\n" + json.dumps(id_info_dic, indent = 2)
+    
+    print(string_content)
+
+    try:
+        send_email(file_id = output_obj_path, mail_content = string_content, files = [write_path], subject_header = "DS-sim-inter: " )
+    except:
+        print("Email filed to send!")
+
+
+    ##### execute LP solver
+
+    lp_sol, write_path_lp = lp_solver(write_path)
+
+    kwargs_lp = {
+        "value_dic": output_dic["state_value_dic"], 
+        "periods": EVAL_PERIODS, 
+        "periods_val_it": 1,
+        "nested_mc_iters": NESTED_MC_ITERS,
+        "discount_fac": DISCOUNT_FAC,
+        "h_cost": output_dic['model_params']['policy_params']['h_cost'],
+        "b_penalty": output_dic['model_params']['policy_params']['b_penalty'],
+        "n_visit_lim": N_VISIT_LIM,
+        "default_ss_policy": ss_policy_fastest_supp_backlog,
+        "safe_factor": SAFE_FACTOR,
+        "sub_eval_periods": SUB_EVAL_PERIODS,
+        "sub_nested_mc_iter": SUB_NESTED_MC_ITER,
+        "max_stock": BIG_S,
+        "approx_eval": True,
+        "pol_dic": output_dic["pol_dic"],
+        "env_filename": output_obj_path
+    }
+
+    print("lp solution")
+    print(lp_sol)
+
+    lp_mdp_cost = mc_with_policy(sourcingEnv, 
+        policy_callback=lp_mdp_policy,
+        use_tqdm = True,
+        **kwargs_lp)
+
+    output_dic['lp_cost'] = np.mean(lp_mdp_cost)
+
+    highligh_dic_keys = ['ssn_cost', 'ss_cost', 'lp_cost', 'myopic_cost', 'di_cost', 'adp_cost']
+    results_dic = {key: output_dic[key] for key in highligh_dic_keys}
+    string_content = str(results_dic) + "\n\n" + json.dumps(id_info_dic, indent = 2)
+
+    try:
+        send_email(file_id = output_obj_path, mail_content = string_content, files = [write_path, write_path_lp])
+    except:
+        print("LP mail filed to send!")
+
+
+
+    

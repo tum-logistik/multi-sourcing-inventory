@@ -59,3 +59,4 @@ BACKORDER_MAX_LP = cfg['lp_config']['backorder_max_lp'] if 'lp_config' in cfg an
 ACTION_SIZE_LP = cfg['lp_config']['action_size_lp'] if 'lp_config' in cfg and 'action_size_lp' in cfg['lp_config'] else 4
 
 VERY_BIG_NUMBER = 9e10
+VERY_SMALL_NUMBER = 9e-7

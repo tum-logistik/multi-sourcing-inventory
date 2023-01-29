@@ -17,7 +17,7 @@ if __name__ == '__main__':
 
     pass 
     print("#### Running Debug Scenario #####")
-    filename = "output/msource_value_dic_12-13-2022-02-18-47.pkl"
+    filename = "output/msource_value_dic_12-21-2022-23-09-40.pkl"
 
     with open(filename, 'rb') as f:
         output_obj = pkl.load(f)
@@ -25,6 +25,8 @@ if __name__ == '__main__':
     value_dic = output_obj["state_value_dic"]
     model_params = output_obj["model_params"]
     sourcingEnv = output_obj["mdp_env"]
+
+    sourcingEnvTest = SourcingEnv()
 
     # sourcingEnv2 = SourcingEnv(
     #     lambda_arrival = model_params['mdp_env_params']['lambda'], # or 10
@@ -44,8 +46,9 @@ if __name__ == '__main__':
         n_backorders = np.array([0, 0]), 
         flag_on_off = np.array([1, 1]))
     
-    sourcingEnv2.lambda_arrival = 50
-    kwargs = {"periods" : 30,
+    # sourcingEnv2.lambda_arrival = 10
+    # sourcingEnv2.procurement_cost_vec = np.array([4.5, 0.5])
+    kwargs = {"periods" : 10,
         "nested_mc_iters" : 5,
         "h_cost": model_params['policy_params']['h_cost'],
         "b_penalty" : model_params['policy_params']['b_penalty'],
@@ -55,17 +58,19 @@ if __name__ == '__main__':
     }
 
     dummy_cost = mc_with_policy(sourcingEnv2, start_state = s_custom, 
-        periods = 30,
-        nested_mc_iters = 5,
         big_s = model_params['policy_params']['big_s'],
         small_s = model_params['policy_params']['small_s'],
-        h_cost = model_params['policy_params']['h_cost'],
-        b_penalty = model_params['policy_params']['b_penalty'],
+        # h_cost = model_params['policy_params']['h_cost'],
+        # b_penalty = model_params['policy_params']['b_penalty'],
         max_order = 6, # BIG_S,
         policy_callback=dummy_explore_policy,
-        use_tqdm = True
+        use_tqdm = True,
+        debug_flag = True,
+        **kwargs
     )
 
+    avg_dummy_cost = np.mean(dummy_cost)
+    print(avg_dummy_cost)
 
     dummy_cost = mc_with_policy(sourcingEnv2, start_state = s_custom, 
         periods = 30,

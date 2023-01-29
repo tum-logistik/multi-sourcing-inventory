@@ -6,11 +6,6 @@ from scipy.stats import poisson
 from sim.sim_functions import *
 
 
-
-
-
-
-
 class SourcingEnv():
 
     # Switch to np.array for speed up
